@@ -224,6 +224,8 @@ namespace json {
 
     class JsonValue {
     public:
+        static constexpr size_t max_array_size = 1000000; // 数组最大元素数限制
+
         JsonValue() : _value{nullptr} {
         }
 
@@ -358,6 +360,9 @@ namespace json {
             auto &arr = std::get<JsonArray>(_value);
             const auto idx = static_cast<size_t>(index);
             if (idx >= arr.size()) {
+                if (idx >= max_array_size) {
+                    throw std::out_of_range("JsonArray index exceeds maximum allowed size");
+                }
                 arr.resize(idx + 1, JsonValue(nullptr));
             }
             return arr[idx];
@@ -688,8 +693,45 @@ namespace json {
         }
 
         const JsonValue &resolve_impl(const std::u8string &pointer) const {
-            // 复用非 const 版本，去除 const 后再加回来
-            return const_cast<JsonValue *>(this)->resolve_impl(pointer);
+            if (pointer.empty()) return *this;
+            if (pointer[0] != u8'/') {
+                throw std::runtime_error("JSON Pointer must start with '/' or be empty");
+            }
+
+            const JsonValue *current = this;
+            size_t pos = 1;
+            while (pos <= pointer.size()) {
+                size_t next = pointer.find(u8'/', pos);
+                if (next == std::u8string::npos) next = pointer.size();
+
+                std::u8string token = unescape_pointer_token(pointer.substr(pos, next - pos));
+
+                if (current->is<JsonObject>()) {
+                    const auto &obj = std::get<JsonObject>(current->_value);
+                    if (!obj.contains(token)) {
+                        throw std::out_of_range("JSON Pointer: key not found");
+                    }
+                    current = &obj.at(token);
+                } else if (current->is<JsonArray>()) {
+                    if (!is_array_index(token)) {
+                        throw std::out_of_range("JSON Pointer: invalid array index");
+                    }
+                    size_t idx = 0;
+                    for (auto c : token) {
+                        idx = idx * 10 + (c - u8'0');
+                    }
+                    const auto &arr = std::get<JsonArray>(current->_value);
+                    if (idx >= arr.size()) {
+                        throw std::out_of_range("JSON Pointer: array index out of range");
+                    }
+                    current = &arr[idx];
+                } else {
+                    throw std::runtime_error("JSON Pointer: cannot traverse into non-container value");
+                }
+
+                pos = next + 1;
+            }
+            return *current;
         }
 
         static std::string serialize_string(const JsonString &str) {

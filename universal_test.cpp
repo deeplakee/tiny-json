@@ -504,6 +504,24 @@ TEST(foreach_with_two_version) {
     ASSERT_DOUBLE_EQ(values[2], 30.0);
 }
 
+// ============================================
+// 数组大小限制测试
+// ============================================
+
+TEST(array_size_limit_normal) {
+    // 正常范围内应该可以正常使用
+    JsonValue j;
+    j[100] = 42;
+    ASSERT_EQ(j.size(), 101);
+    ASSERT_DOUBLE_EQ(j.at(100).as<JsonNumber>(), 42.0);
+}
+
+TEST(array_size_limit_exceeded) {
+    // 超过限制应该抛异常
+    JsonValue j;
+    ASSERT_THROW(j[1000000] = 1, std::out_of_range);
+}
+
 
 // ============================================
 // 迭代器测试
@@ -1204,6 +1222,10 @@ int main() {
     RUN_TEST(foreach_array);
     RUN_TEST(foreach_object);
     RUN_TEST(foreach_with_two_version);
+
+    // 数组大小限制测试
+    RUN_TEST(array_size_limit_normal);
+    RUN_TEST(array_size_limit_exceeded);
 
     // 迭代器测试
     RUN_TEST(iterator_array_range_for);
