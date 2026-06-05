@@ -11,6 +11,7 @@
 #include <memory>
 #include <stdexcept>
 #include <sstream>
+#include <cstdint>
 #include <cctype>
 #include <cmath>
 #include <limits>
@@ -48,8 +49,8 @@ namespace json {
     template<typename T>
     concept JsonTy = requires
     {
-        []<std::size_t... Is>(std::index_sequence<Is...>) {
-            (std::same_as<T, std::variant_alternative_t<Is, JsonVariant> > || ...);
+        []<std::size_t... Is>(std::index_sequence<Is...>) -> bool {
+            return (std::same_as<T, std::variant_alternative_t<Is, JsonVariant> > || ...);
         }(std::make_index_sequence<std::variant_size_v<JsonVariant> >{});
     };
 
@@ -71,13 +72,13 @@ namespace json {
 
 
     inline std::string jsonTypeName(const JsonVariant &v) {
-        switch (v.index()) {
-            case 0: return "null";
-            case 1: return "bool";
-            case 2: return "number";
-            case 3: return "string";
-            case 4: return "array";
-            case 5: return "object";
+        switch (static_cast<JsonValueType>(v.index())) {
+            case JsonValueType::Null: return "null";
+            case JsonValueType::Bool: return "bool";
+            case JsonValueType::Number: return "number";
+            case JsonValueType::String: return "string";
+            case JsonValueType::Array: return "array";
+            case JsonValueType::Object: return "object";
             default: return "unknown";
         }
     }
@@ -211,6 +212,13 @@ namespace json {
         inline bool isdigit(char8_t c) {
             return c >= u8'0' && c <= u8'9';
         }
+
+        // 判断字符是否为十六进制数字
+        inline bool isxdigit(char8_t c) {
+            return isdigit(c) ||
+                   (c >= u8'a' && c <= u8'f') ||
+                   (c >= u8'A' && c <= u8'F');
+        }
     }
 
     class JsonValue {
@@ -245,19 +253,19 @@ namespace json {
         JsonValue(const JsonString &s) : _value{s} {
         }
 
-        JsonValue(JsonString &&s) : _value{std::move(s)} {
+        JsonValue(JsonString &&s) noexcept : _value{std::move(s)} {
         }
 
         JsonValue(const JsonArray &arr) : _value{arr} {
         }
 
-        JsonValue(JsonArray &&arr) : _value{std::move(arr)} {
+        JsonValue(JsonArray &&arr) noexcept : _value{std::move(arr)} {
         }
 
         JsonValue(const JsonObject &obj) : _value{obj} {
         }
 
-        JsonValue(JsonObject &&obj) : _value{std::move(obj)} {
+        JsonValue(JsonObject &&obj) noexcept : _value{std::move(obj)} {
         }
 
         JsonValueType type() const {
@@ -274,7 +282,7 @@ namespace json {
         }
 
         template<JsonTy T>
-        T &get() {
+        T &as() {
             if (!is<T>()) {
                 std::ostringstream oss;
                 oss << "JsonValue type mismatch: requested '"
@@ -287,7 +295,7 @@ namespace json {
         }
 
         template<JsonTy T>
-        const T &get() const {
+        const T &as() const {
             if (!is<T>()) {
                 std::ostringstream oss;
                 oss << "JsonValue type mismatch: requested '"
@@ -300,7 +308,7 @@ namespace json {
         }
 
         // 特殊处理：获取字符串为 std::string
-        std::string get_string() const {
+        std::string as_string() const {
             if (!is<JsonString>()) {
                 throw std::runtime_error("JsonValue type mismatch: not a string");
             }
@@ -365,6 +373,18 @@ namespace json {
             }
 
             std::get<JsonArray>(_value).push_back(std::forward<T>(value));
+        }
+
+        // for JsonArray
+        template<typename... Args>
+        void emplace_back(Args &&... args) {
+            if (is<JsonNull>()) {
+                _value = JsonArray();
+            } else if (!is<JsonArray>()) {
+                throw std::runtime_error("Cannot emplace_back to non-JsonArray value");
+            }
+
+            std::get<JsonArray>(_value).emplace_back(std::forward<Args>(args)...);
         }
 
         // for JsonObject
@@ -717,12 +737,12 @@ namespace json {
 
         JsonValue parse_string() {
             next(); // 跳过开头的引号
-            std::string raw_result;
+            std::u8string raw_result;
 
             while (_pos < _str.size()) {
                 char8_t c = next();
                 if (c == u8'"') {
-                    return JsonValue{util::to_u8string(raw_result)};
+                    return JsonValue{std::move(raw_result)};
                 }
                 if (c == u8'\\') {
                     if (_pos >= _str.size()) {
@@ -730,25 +750,32 @@ namespace json {
                     }
                     c = next();
                     switch (c) {
-                        case u8'"': raw_result += '"';
+                        case u8'"': raw_result += u8'"';
                             break;
-                        case u8'\\': raw_result += '\\';
+                        case u8'\\': raw_result += u8'\\';
                             break;
-                        case u8'/': raw_result += '/';
+                        case u8'/': raw_result += u8'/';
                             break;
-                        case u8'b': raw_result += '\b';
+                        case u8'b': raw_result += u8'\b';
                             break;
-                        case u8'f': raw_result += '\f';
+                        case u8'f': raw_result += u8'\f';
                             break;
-                        case u8'n': raw_result += '\n';
+                        case u8'n': raw_result += u8'\n';
                             break;
-                        case u8'r': raw_result += '\r';
+                        case u8'r': raw_result += u8'\r';
                             break;
-                        case u8't': raw_result += '\t';
+                        case u8't': raw_result += u8'\t';
                             break;
                         case u8'u': {
                             if (_pos + 4 > _str.size()) {
                                 throw std::runtime_error("JSON String Parsing Error: Invalid unicode escape");
+                            }
+
+                            // 验证4个字符都是合法的十六进制数字
+                            for (size_t i = 0; i < 4; ++i) {
+                                if (!util::isxdigit(_str[_pos + i])) {
+                                    throw std::runtime_error("JSON String Parsing Error: Invalid unicode escape");
+                                }
                             }
 
                             // 将 u8string 的十六进制部分转换为普通字符串以便使用 stoul
@@ -768,6 +795,13 @@ namespace json {
 
                                 _pos += 2;
 
+                                // 验证低代理项的4个十六进制字符
+                                for (size_t i = 0; i < 4; ++i) {
+                                    if (!util::isxdigit(_str[_pos + i])) {
+                                        throw std::runtime_error("JSON String Parsing Error: Invalid unicode escape");
+                                    }
+                                }
+
                                 hex_str.clear();
                                 for (size_t i = 0; i < 4; ++i) {
                                     hex_str.push_back(static_cast<char>(_str[_pos + i]));
@@ -783,7 +817,11 @@ namespace json {
                                 code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00);
                             }
 
-                            raw_result += util::utf16_to_utf8(code);
+                            // 将 utf16_to_utf8 的结果追加到 u8string
+                            const std::string utf8_bytes = util::utf16_to_utf8(code);
+                            for (char ch: utf8_bytes) {
+                                raw_result += static_cast<char8_t>(ch);
+                            }
                             break;
                         }
                         default:
@@ -792,7 +830,7 @@ namespace json {
                                 static_cast<char>(c));
                     }
                 } else {
-                    raw_result += static_cast<char>(c);
+                    raw_result += c;
                 }
             }
             throw std::runtime_error("JSON String Parsing Error: Unterminated string");
@@ -841,7 +879,7 @@ namespace json {
                     throw std::runtime_error("JSON String Parsing Error: Expected string key in object");
                 }
                 JsonValue key_val = parse_string();
-                std::u8string key = key_val.get<JsonString>();
+                std::u8string key = key_val.as<JsonString>();
 
                 skip_whitespace();
                 if (peek() != u8':') {

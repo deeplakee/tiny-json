@@ -70,7 +70,7 @@ auto j = parse(R"({
     "skills": ["C++", "Python"]
 })");
 
-std::cout << j["name"].get_string() << std::endl;
+std::cout << j["name"].as_string() << std::endl;
 ```
 
 ------
@@ -81,10 +81,10 @@ std::cout << j["name"].get_string() << std::endl;
 JsonValue j = parse(R"({"a": 1, "b": [10, 20]})");
 
 // object
-int a = j["a"].get<JsonNumber>();
+int a = j["a"].as<JsonNumber>();
 
 // array
-int x = j["b"][0].get<JsonNumber>();
+int x = j["b"][0].as<JsonNumber>();
 ```
 
 ------
@@ -122,7 +122,7 @@ std::cout << j.serialize(2) << std::endl;
 
 ```cpp
 if (j["age"].is<JsonNumber>()) {
-    double age = j["age"].get<JsonNumber>();
+    double age = j["age"].as<JsonNumber>();
 }
 ```
 
@@ -134,7 +134,7 @@ if (j["age"].is<JsonNumber>()) {
 
 ```cpp
 j["skills"].for_each_array([](const JsonValue& v) {
-    std::cout << v.get_string() << std::endl;
+    std::cout << v.as_string() << std::endl;
 });
 ```
 
@@ -181,10 +181,10 @@ JsonValue v = "hello";
 ### 访问
 
 ```cpp
-JsonNull n = v.get<JsonNull>();
-JsonBool b = v.get<JsonBool>();
-JsonNumber num = v.get<JsonNumber>();
-JsonString str = v.get<JsonString>();
+JsonNull n = v.as<JsonNull>();
+JsonBool b = v.as<JsonBool>();
+JsonNumber num = v.as<JsonNumber>();
+JsonString str = v.as<JsonString>();
 ```
 
 ------
@@ -214,7 +214,7 @@ v.at("key");
 
 ```cpp
 v1.for_each_array([&sum](const JsonValue &val) {
-    sum += val.get<JsonNumber>();
+    sum += val.as<JsonNumber>();
 });
 
 v2.for_each_object([&oss](const std::u8string& key, JsonValue& value) {

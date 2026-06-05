@@ -24,7 +24,7 @@ TEST(utf8_chinese_characters) {
     // 解析回来
     JsonValue parsed = parse(serialized);
     ASSERT_TRUE(parsed.is<JsonString>());
-    ASSERT_EQ(parsed.get_string(), "你好世界");
+    ASSERT_EQ(parsed.as_string(), "你好世界");
 }
 
 TEST(utf8_japanese_characters) {
@@ -33,7 +33,7 @@ TEST(utf8_japanese_characters) {
     std::string serialized = j1.serialize();
 
     JsonValue parsed = parse(serialized);
-    ASSERT_EQ(parsed.get_string(), "こんにちは世界");
+    ASSERT_EQ(parsed.as_string(), "こんにちは世界");
 }
 
 TEST(utf8_korean_characters) {
@@ -42,7 +42,7 @@ TEST(utf8_korean_characters) {
     std::string serialized = j1.serialize();
 
     JsonValue parsed = parse(serialized);
-    ASSERT_EQ(parsed.get_string(), "안녕하세요 세계");
+    ASSERT_EQ(parsed.as_string(), "안녕하세요 세계");
 }
 
 TEST(utf8_emoji_characters) {
@@ -53,7 +53,7 @@ TEST(utf8_emoji_characters) {
     std::cout << "Emoji字符串序列化: " << serialized << std::endl;
 
     JsonValue parsed = parse(serialized);
-    ASSERT_EQ(parsed.get_string(), "Hello 😀🌍🎉");
+    ASSERT_EQ(parsed.as_string(), "Hello 😀🌍🎉");
 }
 
 TEST(utf8_mixed_languages) {
@@ -63,7 +63,7 @@ TEST(utf8_mixed_languages) {
     std::string serialized = j1.serialize();
 
     JsonValue parsed = parse(serialized);
-    ASSERT_EQ(parsed.get_string(), util::to_std_string(mixed));
+    ASSERT_EQ(parsed.as_string(), util::to_std_string(mixed));
 }
 
 TEST(utf8_special_symbols) {
@@ -73,7 +73,7 @@ TEST(utf8_special_symbols) {
     std::string serialized = j1.serialize();
 
     JsonValue parsed = parse(serialized);
-    ASSERT_EQ(parsed.get_string(), util::to_std_string(symbols));
+    ASSERT_EQ(parsed.as_string(), util::to_std_string(symbols));
 }
 
 // ============================================
@@ -84,7 +84,7 @@ TEST(unicode_escape_basic) {
     // 测试基本Unicode转义 \uXXXX
     std::string json = R"("\u0048\u0065\u006c\u006c\u006f")"; // "Hello"
     JsonValue j = parse(json);
-    ASSERT_EQ(j.get_string(), "Hello");
+    ASSERT_EQ(j.as_string(), "Hello");
 }
 
 TEST(unicode_escape_chinese) {
@@ -92,7 +92,7 @@ TEST(unicode_escape_chinese) {
     // 你好 = \u4F60\u597D
     std::string json = R"("\u4F60\u597D")";
     JsonValue j = parse(json);
-    ASSERT_EQ(j.get_string(), "你好");
+    ASSERT_EQ(j.as_string(), "你好");
 }
 
 TEST(unicode_escape_japanese) {
@@ -100,7 +100,7 @@ TEST(unicode_escape_japanese) {
     // こんにちは = \u3053\u3093\u306B\u3061\u306F
     std::string json = R"("\u3053\u3093\u306B\u3061\u306F")";
     JsonValue j = parse(json);
-    ASSERT_EQ(j.get_string(), "こんにちは");
+    ASSERT_EQ(j.as_string(), "こんにちは");
 }
 
 TEST(unicode_escape_korean) {
@@ -108,7 +108,7 @@ TEST(unicode_escape_korean) {
     // 안녕 = \uC548\uB155
     std::string json = R"("\uC548\uB155")";
     JsonValue j = parse(json);
-    ASSERT_EQ(j.get_string(), "안녕");
+    ASSERT_EQ(j.as_string(), "안녕");
 }
 
 TEST(unicode_escape_surrogate_pairs) {
@@ -116,7 +116,7 @@ TEST(unicode_escape_surrogate_pairs) {
     // 😀 = U+1F600 = \uD83D\uDE00
     std::string json = R"("\uD83D\uDE00")";
     JsonValue j = parse(json);
-    ASSERT_EQ(j.get_string(), "😀");
+    ASSERT_EQ(j.as_string(), "😀");
 }
 
 TEST(unicode_escape_multiple_surrogates) {
@@ -124,14 +124,14 @@ TEST(unicode_escape_multiple_surrogates) {
     // 🌍 = \uD83C\uDF0D, 🎉 = \uD83C\uDF89
     std::string json = R"("\uD83C\uDF0D \uD83C\uDF89")";
     JsonValue j = parse(json);
-    ASSERT_EQ(j.get_string(), "🌍 🎉");
+    ASSERT_EQ(j.as_string(), "🌍 🎉");
 }
 
 TEST(unicode_escape_mixed_text) {
     // 测试混合普通文本和Unicode转义
     std::string json = R"("Hello \u4E16\u754C !")"; // Hello 世界 !
     JsonValue j = parse(json);
-    ASSERT_EQ(j.get_string(), "Hello 世界 !");
+    ASSERT_EQ(j.as_string(), "Hello 世界 !");
 }
 
 TEST(unicode_escape_all_bmp) {
@@ -156,7 +156,7 @@ TEST(unicode_escape_all_bmp) {
     for (const auto &test: tests) {
         std::string json = "\"" + test.json_escape + "\"";
         JsonValue j = parse(json);
-        ASSERT_EQ(j.get_string(), test.expected);
+        ASSERT_EQ(j.as_string(), test.expected);
     }
 }
 
@@ -177,9 +177,9 @@ TEST(utf8_object_keys_chinese) {
 
     // 解析并验证
     JsonValue parsed = parse(serialized);
-    ASSERT_EQ(parsed.at(u8"姓名").get_string(), "张三");
-    ASSERT_DOUBLE_EQ(parsed.at(u8"年龄").get<JsonNumber>(), 25.0);
-    ASSERT_EQ(parsed.at(u8"城市").get_string(), "北京");
+    ASSERT_EQ(parsed.at(u8"姓名").as_string(), "张三");
+    ASSERT_DOUBLE_EQ(parsed.at(u8"年龄").as<JsonNumber>(), 25.0);
+    ASSERT_EQ(parsed.at(u8"城市").as_string(), "北京");
 }
 
 TEST(utf8_object_keys_mixed) {
@@ -195,11 +195,11 @@ TEST(utf8_object_keys_mixed) {
     std::string serialized = j.serialize();
     JsonValue parsed = parse(serialized);
 
-    ASSERT_EQ(parsed.at(u8"name").get_string(), "Alice");
-    ASSERT_EQ(parsed.at(u8"名前").get_string(), "アリス");
-    ASSERT_EQ(parsed.at(u8"이름").get_string(), "앨리스");
-    ASSERT_EQ(parsed.at(u8"姓名").get_string(), "爱丽丝");
-    ASSERT_EQ(parsed.at(u8"الاسم").get_string(), "أليس");
+    ASSERT_EQ(parsed.at(u8"name").as_string(), "Alice");
+    ASSERT_EQ(parsed.at(u8"名前").as_string(), "アリス");
+    ASSERT_EQ(parsed.at(u8"이름").as_string(), "앨리스");
+    ASSERT_EQ(parsed.at(u8"姓名").as_string(), "爱丽丝");
+    ASSERT_EQ(parsed.at(u8"الاسم").as_string(), "أليس");
 }
 
 TEST(utf8_object_keys_emoji) {
@@ -214,9 +214,9 @@ TEST(utf8_object_keys_emoji) {
     std::cout << "Emoji字段名对象: " << serialized << std::endl;
 
     JsonValue parsed = parse(serialized);
-    ASSERT_EQ(parsed.at(u8"😀").get_string(), "happy");
-    ASSERT_EQ(parsed.at(u8"🌟").get_string(), "star");
-    ASSERT_EQ(parsed.at(u8"🎵").get_string(), "music");
+    ASSERT_EQ(parsed.at(u8"😀").as_string(), "happy");
+    ASSERT_EQ(parsed.at(u8"🌟").as_string(), "star");
+    ASSERT_EQ(parsed.at(u8"🎵").as_string(), "music");
 }
 
 // ============================================
@@ -239,12 +239,12 @@ TEST(utf8_array_multilingual) {
 
     JsonValue parsed = parse(serialized);
     ASSERT_EQ(parsed.size(), 6);
-    ASSERT_EQ(parsed.at(0).get_string(), "Hello");
-    ASSERT_EQ(parsed.at(1).get_string(), "你好");
-    ASSERT_EQ(parsed.at(2).get_string(), "こんにちは");
-    ASSERT_EQ(parsed.at(3).get_string(), "안녕하세요");
-    ASSERT_EQ(parsed.at(4).get_string(), "مرحبا");
-    ASSERT_EQ(parsed.at(5).get_string(), "😀🌍");
+    ASSERT_EQ(parsed.at(0).as_string(), "Hello");
+    ASSERT_EQ(parsed.at(1).as_string(), "你好");
+    ASSERT_EQ(parsed.at(2).as_string(), "こんにちは");
+    ASSERT_EQ(parsed.at(3).as_string(), "안녕하세요");
+    ASSERT_EQ(parsed.at(4).as_string(), "مرحبا");
+    ASSERT_EQ(parsed.at(5).as_string(), "😀🌍");
 }
 
 // ============================================
@@ -279,12 +279,12 @@ TEST(utf8_complex_nested_structure) {
 
     // 解析并验证
     JsonValue parsed = parse(serialized);
-    ASSERT_EQ(parsed.at(u8"用户").at(u8"姓名").get_string(), "李四");
-    ASSERT_EQ(parsed.at(u8"用户").at(u8"爱好").at(0).get_string(), "编程 💻");
-    ASSERT_EQ(parsed.at(u8"用户").at(u8"爱好").at(1).get_string(), "阅读 📚");
-    ASSERT_EQ(parsed.at(u8"用户").at(u8"爱好").at(2).get_string(), "音乐 🎵");
-    ASSERT_EQ(parsed.at(u8"用户").at(u8"地址").at(u8"国家").get_string(), "中国");
-    ASSERT_EQ(parsed.at(u8"用户").at(u8"地址").at(u8"城市").get_string(), "上海");
+    ASSERT_EQ(parsed.at(u8"用户").at(u8"姓名").as_string(), "李四");
+    ASSERT_EQ(parsed.at(u8"用户").at(u8"爱好").at(0).as_string(), "编程 💻");
+    ASSERT_EQ(parsed.at(u8"用户").at(u8"爱好").at(1).as_string(), "阅读 📚");
+    ASSERT_EQ(parsed.at(u8"用户").at(u8"爱好").at(2).as_string(), "音乐 🎵");
+    ASSERT_EQ(parsed.at(u8"用户").at(u8"地址").at(u8"国家").as_string(), "中国");
+    ASSERT_EQ(parsed.at(u8"用户").at(u8"地址").at(u8"城市").as_string(), "上海");
 }
 
 // ============================================
@@ -303,7 +303,7 @@ TEST(utf8_foreach_array_with_unicode) {
 
     // 使用const版本遍历
     j.for_each_array([&](const JsonValue &elem) {
-        fruits.push_back(elem.get_string());
+        fruits.push_back(elem.as_string());
     });
 
     ASSERT_EQ(fruits.size(), 4);
@@ -324,7 +324,7 @@ TEST(utf8_foreach_object_with_unicode) {
 
     // 使用const版本遍历对象
     j.for_each_object([&](const JsonString &key, const JsonValue &val) {
-        items.emplace_back(util::to_std_string(key), val.get_string());
+        items.emplace_back(util::to_std_string(key), val.as_string());
     });
 
     ASSERT_EQ(items.size(), 3);
@@ -350,7 +350,7 @@ TEST(utf8_modify_array_with_foreach) {
     // 转换为大写
     j.for_each_array([](JsonValue &elem) {
         if (elem.is<JsonString>()) {
-            std::string s = elem.get_string();
+            std::string s = elem.as_string();
             // 这里不会改变中文字符，但会尝试转换ASCII部分
             std::ranges::transform(s, s.begin(),
                                    [](unsigned char c) { return std::toupper(c); });
@@ -358,10 +358,10 @@ TEST(utf8_modify_array_with_foreach) {
         }
     });
 
-    ASSERT_EQ(j.at(0).get_string(), "HELLO");
-    ASSERT_EQ(j.at(1).get_string(), "WORLD");
+    ASSERT_EQ(j.at(0).as_string(), "HELLO");
+    ASSERT_EQ(j.at(1).as_string(), "WORLD");
     // 中文字符不应被改变（没有大写形式）
-    ASSERT_EQ(j.at(2).get_string(), "你好");
+    ASSERT_EQ(j.at(2).as_string(), "你好");
 }
 
 // ============================================
@@ -389,7 +389,7 @@ TEST(utf8_valid_4byte_utf8) {
     std::cout << "4字节UTF-8序列化: " << serialized << std::endl;
 
     JsonValue parsed = parse(serialized);
-    ASSERT_EQ(parsed.get_string(), "🎉🎊🎋🎌");
+    ASSERT_EQ(parsed.as_string(), "🎉🎊🎋🎌");
 }
 
 TEST(utf8_long_multilingual_string) {
@@ -413,7 +413,7 @@ TEST(utf8_long_multilingual_string) {
     std::cout << "多语言长字符串长度: " << serialized.length() << std::endl;
 
     JsonValue parsed = parse(serialized);
-    ASSERT_EQ(parsed.get_string(), util::to_std_string(long_str));
+    ASSERT_EQ(parsed.as_string(), util::to_std_string(long_str));
 }
 
 // ============================================
@@ -437,7 +437,7 @@ TEST(utf8_serialize_with_indent) {
 
     // 验证解析回来
     JsonValue parsed = parse(serialized);
-    ASSERT_EQ(parsed.at(u8"数据").at(u8"メッセージ").get_string(), "こんにちは世界");
+    ASSERT_EQ(parsed.at(u8"数据").at(u8"メッセージ").as_string(), "こんにちは世界");
 }
 
 // ============================================
@@ -514,8 +514,5 @@ int main() {
     std::cout << "\n================================\n";
     std::cout << "All UTF-8/Unicode tests passed successfully!\n";
 
-#ifdef _WIN32
-    system("pause");
-#endif
     return 0;
 }

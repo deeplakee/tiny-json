@@ -4,6 +4,7 @@
 #include <cassert>
 #include <string>
 #include <vector>
+#include <limits>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -27,38 +28,38 @@ TEST(create_bool) {
     JsonValue j1 = true;
     ASSERT_EQ(j1.type(), JsonValueType::Bool);
     ASSERT_TRUE(j1.is<JsonBool>());
-    ASSERT_EQ(j1.get<JsonBool>(), true);
+    ASSERT_EQ(j1.as<JsonBool>(), true);
 
     JsonValue j2 = false;
-    ASSERT_EQ(j2.get<JsonBool>(), false);
+    ASSERT_EQ(j2.as<JsonBool>(), false);
 }
 
 TEST(create_number) {
     JsonValue j1 = 42.5;
     ASSERT_EQ(j1.type(), JsonValueType::Number);
     ASSERT_TRUE(j1.is<JsonNumber>());
-    ASSERT_DOUBLE_EQ(j1.get<JsonNumber>(), 42.5);
+    ASSERT_DOUBLE_EQ(j1.as<JsonNumber>(), 42.5);
 
     JsonValue j2 = 100;
-    ASSERT_DOUBLE_EQ(j2.get<JsonNumber>(), 100.0);
+    ASSERT_DOUBLE_EQ(j2.as<JsonNumber>(), 100.0);
 
     JsonValue j3 = -3.14;
-    ASSERT_DOUBLE_EQ(j3.get<JsonNumber>(), -3.14);
+    ASSERT_DOUBLE_EQ(j3.as<JsonNumber>(), -3.14);
 }
 
 TEST(create_string) {
     JsonValue j1 = "hello";
     ASSERT_EQ(j1.type(), JsonValueType::String);
     ASSERT_TRUE(j1.is<JsonString>());
-    ASSERT_EQ(j1.get_string(), "hello");
+    ASSERT_EQ(j1.as_string(), "hello");
 
     JsonValue j2(std::string("world"));
-    ASSERT_EQ(j2.get_string(), "world");
+    ASSERT_EQ(j2.as_string(), "world");
 
     JsonValue j3 = u8"这是";
     ASSERT_EQ(j3.type(), JsonValueType::String);
     ASSERT_TRUE(j3.is<JsonString>());
-    ASSERT_EQ(j3.get<JsonString>(), u8"这是");
+    ASSERT_EQ(j3.as<JsonString>(), u8"这是");
 
     JsonValue j4(std::u8string(u8"测试"));
     ASSERT_TRUE(j4.is<JsonString>());
@@ -174,35 +175,35 @@ TEST(parse_null) {
 
 TEST(parse_bool) {
     JsonValue j1 = parse("true");
-    ASSERT_TRUE(j1.get<JsonBool>());
+    ASSERT_TRUE(j1.as<JsonBool>());
 
     JsonValue j2 = parse("false");
-    ASSERT_FALSE(j2.get<JsonBool>());
+    ASSERT_FALSE(j2.as<JsonBool>());
 }
 
 TEST(parse_number) {
     JsonValue j1 = parse("42");
-    ASSERT_DOUBLE_EQ(j1.get<JsonNumber>(), 42.0);
+    ASSERT_DOUBLE_EQ(j1.as<JsonNumber>(), 42.0);
 
     JsonValue j2 = parse("-3.14");
-    ASSERT_DOUBLE_EQ(j2.get<JsonNumber>(), -3.14);
+    ASSERT_DOUBLE_EQ(j2.as<JsonNumber>(), -3.14);
 
     JsonValue j3 = parse("1.5e2");
-    ASSERT_DOUBLE_EQ(j3.get<JsonNumber>(), 150.0);
+    ASSERT_DOUBLE_EQ(j3.as<JsonNumber>(), 150.0);
 
     JsonValue j4 = parse("0");
-    ASSERT_DOUBLE_EQ(j4.get<JsonNumber>(), 0.0);
+    ASSERT_DOUBLE_EQ(j4.as<JsonNumber>(), 0.0);
 }
 
 TEST(parse_string) {
     JsonValue j1 = parse("\"hello\"");
-    ASSERT_EQ(j1.get_string(), "hello");
+    ASSERT_EQ(j1.as_string(), "hello");
 
     JsonValue j2 = parse("\"say \\\"hello\\\"\"");
-    ASSERT_EQ(j2.get_string(), "say \"hello\"");
+    ASSERT_EQ(j2.as_string(), "say \"hello\"");
 
     JsonValue j3 = parse("\"line1\\nline2\"");
-    ASSERT_EQ(j3.get_string(), "line1\nline2");
+    ASSERT_EQ(j3.as_string(), "line1\nline2");
 }
 
 TEST(parse_empty_array) {
@@ -214,17 +215,17 @@ TEST(parse_empty_array) {
 TEST(parse_simple_array) {
     JsonValue j = parse("[1, 2, 3]");
     ASSERT_EQ(j.size(), 3);
-    ASSERT_DOUBLE_EQ(j.at(0).get<JsonNumber>(), 1.0);
-    ASSERT_DOUBLE_EQ(j.at(1).get<JsonNumber>(), 2.0);
-    ASSERT_DOUBLE_EQ(j.at(2).get<JsonNumber>(), 3.0);
+    ASSERT_DOUBLE_EQ(j.at(0).as<JsonNumber>(), 1.0);
+    ASSERT_DOUBLE_EQ(j.at(1).as<JsonNumber>(), 2.0);
+    ASSERT_DOUBLE_EQ(j.at(2).as<JsonNumber>(), 3.0);
 }
 
 TEST(parse_mixed_array) {
     JsonValue j = parse("[1, \"two\", true, null]");
     ASSERT_EQ(j.size(), 4);
-    ASSERT_DOUBLE_EQ(j.at(0).get<JsonNumber>(), 1.0);
-    ASSERT_EQ(j.at(1).get_string(), "two");
-    ASSERT_TRUE(j.at(2).get<JsonBool>());
+    ASSERT_DOUBLE_EQ(j.at(0).as<JsonNumber>(), 1.0);
+    ASSERT_EQ(j.at(1).as_string(), "two");
+    ASSERT_TRUE(j.at(2).as<JsonBool>());
     ASSERT_TRUE(j.at(3).is<JsonNull>());
 }
 
@@ -237,8 +238,8 @@ TEST(parse_empty_object) {
 TEST(parse_simple_object) {
     JsonValue j = parse("{\"name\": \"Alice\", \"age\": 30}");
     ASSERT_EQ(j.size(), 2);
-    ASSERT_EQ(j.at("name").get_string(), "Alice");
-    ASSERT_DOUBLE_EQ(j.at("age").get<JsonNumber>(), 30.0);
+    ASSERT_EQ(j.at("name").as_string(), "Alice");
+    ASSERT_DOUBLE_EQ(j.at("age").as<JsonNumber>(), 30.0);
 }
 
 TEST(parse_nested_structure) {
@@ -252,14 +253,14 @@ TEST(parse_nested_structure) {
     })";
 
     JsonValue j = parse(json);
-    ASSERT_EQ(j.at("name").get_string(), "Alice");
-    ASSERT_EQ(j.at("address").at("city").get_string(), "Beijing");
-    ASSERT_DOUBLE_EQ(j.at("scores").at(1).get<JsonNumber>(), 88.0);
+    ASSERT_EQ(j.at("name").as_string(), "Alice");
+    ASSERT_EQ(j.at("address").at("city").as_string(), "Beijing");
+    ASSERT_DOUBLE_EQ(j.at("scores").at(1).as<JsonNumber>(), 88.0);
 }
 
 TEST(parse_unicode) {
     JsonValue j = parse("\"\\u0048\\u0065\\u006c\\u006c\\u006f\"");
-    ASSERT_EQ(j.get_string(), "Hello");
+    ASSERT_EQ(j.as_string(), "Hello");
 }
 
 TEST(parse_errors) {
@@ -276,8 +277,8 @@ TEST(parse_errors) {
 
 TEST(array_access) {
     JsonValue j = parse("[1, 2, 3]");
-    ASSERT_DOUBLE_EQ(j.at(0).get<JsonNumber>(), 1.0);
-    ASSERT_DOUBLE_EQ(j.at(2).get<JsonNumber>(), 3.0);
+    ASSERT_DOUBLE_EQ(j.at(0).as<JsonNumber>(), 1.0);
+    ASSERT_DOUBLE_EQ(j.at(2).as<JsonNumber>(), 3.0);
 
     ASSERT_THROW(j.at(3), std::out_of_range);
     ASSERT_THROW(j.at("key"), std::runtime_error);
@@ -288,20 +289,20 @@ TEST(array_modification) {
 
     j[2] = 3;
     ASSERT_EQ(j.size(), 3);
-    ASSERT_DOUBLE_EQ(j.at(2).get<JsonNumber>(), 3.0);
+    ASSERT_DOUBLE_EQ(j.at(2).as<JsonNumber>(), 3.0);
 
     j.push_back(JsonValue(4));
     ASSERT_EQ(j.size(), 4);
 
     j[0] = 10;
-    ASSERT_DOUBLE_EQ(j.at(0).get<JsonNumber>(), 10.0);
+    ASSERT_DOUBLE_EQ(j.at(0).as<JsonNumber>(), 10.0);
 }
 
 TEST(object_access) {
     JsonValue j = parse("{\"name\": \"Alice\", \"age\": 30}");
 
-    ASSERT_EQ(j.at("name").get_string(), "Alice");
-    ASSERT_DOUBLE_EQ(j.at("age").get<JsonNumber>(), 30.0);
+    ASSERT_EQ(j.at("name").as_string(), "Alice");
+    ASSERT_DOUBLE_EQ(j.at("age").as<JsonNumber>(), 30.0);
     ASSERT_TRUE(j.contains("name"));
     ASSERT_FALSE(j.contains("city"));
 
@@ -316,10 +317,10 @@ TEST(object_modification) {
 
     j["age"] = 30;
     ASSERT_EQ(j.size(), 2);
-    ASSERT_DOUBLE_EQ(j.at("age").get<JsonNumber>(), 30.0);
+    ASSERT_DOUBLE_EQ(j.at("age").as<JsonNumber>(), 30.0);
 
     j["name"] = "Bob";
-    ASSERT_EQ(j.at("name").get_string(), "Bob");
+    ASSERT_EQ(j.at("name").as_string(), "Bob");
 
     j.insert("city", JsonValue("Beijing"));
     ASSERT_TRUE(j.contains("city"));
@@ -367,8 +368,8 @@ TEST(type_checking) {
 
 TEST(type_mismatch_errors) {
     JsonValue j(42);
-    ASSERT_THROW(j.get<JsonString>(), std::runtime_error);
-    ASSERT_THROW(j.get_string(), std::runtime_error);
+    ASSERT_THROW(j.as<JsonString>(), std::runtime_error);
+    ASSERT_THROW(j.as_string(), std::runtime_error);
     ASSERT_THROW(j.size(), std::runtime_error); // number has no size
 
     JsonValue j_arr = array({});
@@ -384,15 +385,15 @@ TEST(type_mismatch_errors) {
 
 TEST(large_numbers) {
     JsonValue j = parse("1e308");
-    ASSERT_TRUE(j.get<JsonNumber>() > 0);
+    ASSERT_TRUE(j.as<JsonNumber>() > 0);
 
     JsonValue j2 = parse("-1e308");
-    ASSERT_TRUE(j2.get<JsonNumber>() < 0);
+    ASSERT_TRUE(j2.as<JsonNumber>() < 0);
 }
 
 TEST(special_characters_in_string) {
     JsonValue j = parse("\"\\t\\n\\r\\b\\f\"");
-    std::string result = j.get_string();
+    std::string result = j.as_string();
     ASSERT_EQ(result[0], '\t');
     ASSERT_EQ(result[1], '\n');
     ASSERT_EQ(result[2], '\r');
@@ -403,7 +404,7 @@ TEST(special_characters_in_string) {
 TEST(deep_nesting) {
     std::string json = "{\"a\":{\"b\":{\"c\":{\"d\":{\"e\":1}}}}}";
     JsonValue j = parse(json);
-    ASSERT_EQ(j.at("a").at("b").at("c").at("d").at("e").get<JsonNumber>(), 1.0);
+    ASSERT_EQ(j.at("a").at("b").at("c").at("d").at("e").as<JsonNumber>(), 1.0);
 }
 
 TEST(empty_structures) {
@@ -426,7 +427,7 @@ TEST(helper_array_function) {
     JsonValue j = array({1, "two", true});
     ASSERT_EQ(j.type(), JsonValueType::Array);
     ASSERT_EQ(j.size(), 3);
-    ASSERT_DOUBLE_EQ(j.at(0).get<JsonNumber>(), 1.0);
+    ASSERT_DOUBLE_EQ(j.at(0).as<JsonNumber>(), 1.0);
 }
 
 TEST(helper_object_function) {
@@ -435,8 +436,8 @@ TEST(helper_object_function) {
         {"age", 30}
     });
     ASSERT_EQ(j.type(), JsonValueType::Object);
-    ASSERT_EQ(j.at("name").get_string(), "Alice");
-    ASSERT_DOUBLE_EQ(j.at("age").get<JsonNumber>(), 30.0);
+    ASSERT_EQ(j.at("name").as_string(), "Alice");
+    ASSERT_DOUBLE_EQ(j.at("age").as<JsonNumber>(), 30.0);
 }
 
 // ============================================
@@ -448,7 +449,7 @@ TEST(foreach_array) {
     std::vector<double> values;
 
     j.for_each_array([&](const JsonValue &elem) {
-        values.push_back(elem.get<JsonNumber>());
+        values.push_back(elem.as<JsonNumber>());
     });
 
     ASSERT_EQ(values.size(), 3);
@@ -467,9 +468,9 @@ TEST(foreach_object) {
     j.for_each_object([&](const JsonString &key, const JsonValue &value) {
         count++;
         if (util::to_std_string(key) == "name") {
-            ASSERT_EQ(value.get_string(), "Alice");
+            ASSERT_EQ(value.as_string(), "Alice");
         } else if (util::to_std_string(key) == "age") {
-            ASSERT_DOUBLE_EQ(value.get<JsonNumber>(), 30.0);
+            ASSERT_DOUBLE_EQ(value.as<JsonNumber>(), 30.0);
         }
     });
 
@@ -481,13 +482,13 @@ TEST(foreach_with_two_version) {
 
     // 非const引用调用非const版本
     j.for_each_array([](JsonValue &elem) {
-        elem = JsonValue(elem.get<JsonNumber>() * 10);
+        elem = JsonValue(elem.as<JsonNumber>() * 10);
     });
 
     // 验证修改成功
-    ASSERT_DOUBLE_EQ(j.at(0).get<JsonNumber>(), 10.0);
-    ASSERT_DOUBLE_EQ(j.at(1).get<JsonNumber>(), 20.0);
-    ASSERT_DOUBLE_EQ(j.at(2).get<JsonNumber>(), 30.0);
+    ASSERT_DOUBLE_EQ(j.at(0).as<JsonNumber>(), 10.0);
+    ASSERT_DOUBLE_EQ(j.at(1).as<JsonNumber>(), 20.0);
+    ASSERT_DOUBLE_EQ(j.at(2).as<JsonNumber>(), 30.0);
 
     // 通过const引用强制调用const版本
     const JsonValue &const_j = j;
@@ -495,12 +496,231 @@ TEST(foreach_with_two_version) {
 
     const_j.for_each_array([&](const JsonValue &elem) {
         // elem是const引用，不能修改
-        values.push_back(elem.get<JsonNumber>());
+        values.push_back(elem.as<JsonNumber>());
     });
 
     ASSERT_DOUBLE_EQ(values[0], 10.0);
     ASSERT_DOUBLE_EQ(values[1], 20.0);
     ASSERT_DOUBLE_EQ(values[2], 30.0);
+}
+
+
+// ============================================
+// emplace_back 测试
+// ============================================
+
+TEST(emplace_back_basic) {
+    JsonValue j = array({});
+    j.emplace_back(42);
+    j.emplace_back("hello");
+    j.emplace_back(true);
+    ASSERT_EQ(j.size(), 3);
+    ASSERT_DOUBLE_EQ(j.at(0).as<JsonNumber>(), 42.0);
+    ASSERT_EQ(j.at(1).as_string(), "hello");
+    ASSERT_TRUE(j.at(2).as<JsonBool>());
+}
+
+TEST(emplace_back_from_null) {
+    JsonValue j; // null
+    j.emplace_back(1);
+    ASSERT_EQ(j.type(), JsonValueType::Array);
+    ASSERT_EQ(j.size(), 1);
+}
+
+TEST(emplace_back_type_error) {
+    JsonValue j = true;
+    ASSERT_THROW(j.emplace_back(1), std::runtime_error);
+}
+
+// ============================================
+// typeName 测试
+// ============================================
+
+TEST(type_name_returns_correct_strings) {
+    ASSERT_EQ(JsonValue().typeName(), "null");
+    ASSERT_EQ(JsonValue(true).typeName(), "bool");
+    ASSERT_EQ(JsonValue(3.14).typeName(), "number");
+    ASSERT_EQ(JsonValue("hello").typeName(), "string");
+    ASSERT_EQ(array({}).typeName(), "array");
+    ASSERT_EQ(object({}).typeName(), "object");
+}
+
+// ============================================
+// 移动语义测试
+// ============================================
+
+TEST(move_string) {
+    JsonValue j1("hello world");
+    JsonValue j2(std::move(j1.as<JsonString>()));
+    ASSERT_EQ(j2.as_string(), "hello world");
+}
+
+TEST(move_array) {
+    JsonArray arr = {1, 2, 3};
+    JsonValue j1(arr);
+    JsonArray moved_arr = std::move(j1.as<JsonArray>());
+    JsonValue j2(moved_arr);
+    ASSERT_EQ(j2.size(), 3);
+    ASSERT_DOUBLE_EQ(j2.at(0).as<JsonNumber>(), 1.0);
+}
+
+TEST(move_object) {
+    JsonValue j1 = object({{"key", "value"}});
+    JsonObject moved_obj = std::move(j1.as<JsonObject>());
+    JsonValue j2(moved_obj);
+    ASSERT_EQ(j2.size(), 1);
+    ASSERT_EQ(j2.at("key").as_string(), "value");
+}
+
+// ============================================
+// const 访问器测试
+// ============================================
+
+TEST(const_array_access) {
+    const JsonValue j = array({10, 20, 30});
+    ASSERT_EQ(j.size(), 3);
+    ASSERT_DOUBLE_EQ(j.at(0).as<JsonNumber>(), 10.0);
+    ASSERT_DOUBLE_EQ(j.at(2).as<JsonNumber>(), 30.0);
+    ASSERT_TRUE(j.is<JsonArray>());
+    ASSERT_THROW(j.at(3), std::out_of_range);
+}
+
+TEST(const_object_access) {
+    const JsonValue j = object({{"name", "Alice"}, {"age", 30}});
+    ASSERT_EQ(j.size(), 2);
+    ASSERT_EQ(j.at("name").as_string(), "Alice");
+    ASSERT_TRUE(j.contains("name"));
+    ASSERT_FALSE(j.contains("missing"));
+    ASSERT_THROW(j.at("missing"), std::out_of_range);
+}
+
+// ============================================
+// 更多解析器错误路径测试
+// ============================================
+
+TEST(parse_error_invalid_escape) {
+    ASSERT_THROW(parse("\"\\x\""), std::runtime_error);
+}
+
+TEST(parse_error_mismatched_brackets) {
+    ASSERT_THROW(parse("{]"), std::runtime_error);
+    ASSERT_THROW(parse("[}"), std::runtime_error);
+}
+
+TEST(parse_error_missing_colon) {
+    ASSERT_THROW(parse("{\"a\" 1}"), std::runtime_error);
+}
+
+TEST(parse_error_trailing_comma_array) {
+    // 标准 JSON 不允许尾逗号
+    ASSERT_THROW(parse("[1,2,]"), std::runtime_error);
+}
+
+TEST(parse_error_trailing_comma_object) {
+    ASSERT_THROW(parse("{\"a\":1,}"), std::runtime_error);
+}
+
+TEST(parse_error_invalid_unicode_escape) {
+    ASSERT_THROW(parse("\"\\u00GG\""), std::runtime_error);
+}
+
+TEST(parse_error_number_with_trailing_chars) {
+    // "123abc" 不是合法的 JSON（顶级值必须是完整 token）
+    ASSERT_THROW(parse("123abc"), std::runtime_error);
+}
+
+// ============================================
+// 数字格式化边界测试
+// ============================================
+
+TEST(number_nan_inf) {
+    // NaN 和 Inf 在 JSON 中不合法，但库内部用 double 存储
+    // 序列化时 isSafeToConvertToInt 应返回 false
+    JsonValue j_nan(std::numeric_limits<double>::quiet_NaN());
+    // NaN 序列化不应崩溃（虽然输出不是合法 JSON）
+    std::string result = j_nan.serialize();
+    ASSERT_TRUE(result.find("nan") != std::string::npos || result.find("NaN") != std::string::npos);
+
+    JsonValue j_inf(std::numeric_limits<double>::infinity());
+    std::string result_inf = j_inf.serialize();
+    ASSERT_TRUE(result_inf.find("inf") != std::string::npos || result_inf.find("Inf") != std::string::npos);
+}
+
+TEST(number_integer_formatting) {
+    // 整数应省略小数点
+    ASSERT_EQ(JsonValue(0.0).serialize(), "0");
+    ASSERT_EQ(JsonValue(42.0).serialize(), "42");
+    ASSERT_EQ(JsonValue(-100.0).serialize(), "-100");
+
+    // 非整数应保留小数点
+    JsonValue j(3.14);
+    ASSERT_TRUE(j.serialize().find('.') != std::string::npos);
+}
+
+TEST(number_int_constructor) {
+    // int 构造应转为 double
+    JsonValue j(42);
+    ASSERT_TRUE(j.is<JsonNumber>());
+    ASSERT_DOUBLE_EQ(j.as<JsonNumber>(), 42.0);
+    ASSERT_EQ(j.serialize(), "42");
+}
+
+// ============================================
+// 往返一致性测试
+// ============================================
+
+TEST(round_trip_simple) {
+    std::string original = R"({"name":"Alice","age":30,"active":true,"score":95.5})";
+    JsonValue parsed = parse(original);
+    std::string serialized = parsed.serialize();
+    JsonValue reparsed = parse(serialized);
+
+    ASSERT_EQ(reparsed.at("name").as_string(), "Alice");
+    ASSERT_DOUBLE_EQ(reparsed.at("age").as<JsonNumber>(), 30.0);
+    ASSERT_TRUE(reparsed.at("active").as<JsonBool>());
+    ASSERT_DOUBLE_EQ(reparsed.at("score").as<JsonNumber>(), 95.5);
+}
+
+TEST(round_trip_nested) {
+    std::string original = R"({"a":{"b":[1,2,3]},"c":"hello"})";
+    JsonValue parsed = parse(original);
+    std::string serialized = parsed.serialize();
+    JsonValue reparsed = parse(serialized);
+
+    ASSERT_EQ(reparsed.at("a").at("b").at(1).as<JsonNumber>(), 2.0);
+    ASSERT_EQ(reparsed.at("c").as_string(), "hello");
+}
+
+TEST(round_trip_with_escapes) {
+    std::string original = R"({"msg":"say \"hello\"\n\tworld"})";
+    JsonValue parsed = parse(original);
+    std::string serialized = parsed.serialize();
+    JsonValue reparsed = parse(serialized);
+
+    ASSERT_EQ(reparsed.at("msg").as_string(), "say \"hello\"\n\tworld");
+}
+
+// ============================================
+// serialize 格式化测试补充
+// ============================================
+
+TEST(serialize_pretty_nested) {
+    JsonValue j = object({
+        {"name", "Alice"},
+        {"scores", array({95, 88, 92})},
+        {"active", true}
+    });
+
+    std::string pretty = j.serialize(4);
+    // 应包含缩进
+    ASSERT_TRUE(pretty.find("    ") != std::string::npos);
+    // 应包含换行
+    ASSERT_TRUE(pretty.find('\n') != std::string::npos);
+}
+
+TEST(serialize_empty_pretty) {
+    ASSERT_EQ(array({}).serialize(2), "[]");
+    ASSERT_EQ(object({}).serialize(2), "{}");
 }
 
 
@@ -558,8 +778,6 @@ int main() {
     RUN_TEST(type_checking);
     RUN_TEST(type_mismatch_errors);
 
-    // utf-8
-
     // 边界情况测试
     RUN_TEST(large_numbers);
     RUN_TEST(special_characters_in_string);
@@ -575,11 +793,48 @@ int main() {
     RUN_TEST(foreach_object);
     RUN_TEST(foreach_with_two_version);
 
+    // emplace_back 测试
+    RUN_TEST(emplace_back_basic);
+    RUN_TEST(emplace_back_from_null);
+    RUN_TEST(emplace_back_type_error);
+
+    // typeName 测试
+    RUN_TEST(type_name_returns_correct_strings);
+
+    // 移动语义测试
+    RUN_TEST(move_string);
+    RUN_TEST(move_array);
+    RUN_TEST(move_object);
+
+    // const 访问器测试
+    RUN_TEST(const_array_access);
+    RUN_TEST(const_object_access);
+
+    // 更多解析器错误路径测试
+    RUN_TEST(parse_error_invalid_escape);
+    RUN_TEST(parse_error_mismatched_brackets);
+    RUN_TEST(parse_error_missing_colon);
+    RUN_TEST(parse_error_trailing_comma_array);
+    RUN_TEST(parse_error_trailing_comma_object);
+    RUN_TEST(parse_error_invalid_unicode_escape);
+    RUN_TEST(parse_error_number_with_trailing_chars);
+
+    // 数字格式化边界测试
+    RUN_TEST(number_nan_inf);
+    RUN_TEST(number_integer_formatting);
+    RUN_TEST(number_int_constructor);
+
+    // 往返一致性测试
+    RUN_TEST(round_trip_simple);
+    RUN_TEST(round_trip_nested);
+    RUN_TEST(round_trip_with_escapes);
+
+    // serialize 格式化补充测试
+    RUN_TEST(serialize_pretty_nested);
+    RUN_TEST(serialize_empty_pretty);
+
     std::cout << "\n==========================\n";
     std::cout << "All tests passed successfully!\n";
 
-#ifdef _WIN32
-    system("pause");
-#endif
     return 0;
 }
