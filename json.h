@@ -456,6 +456,39 @@ namespace json {
             return resolve_impl(ptr);
         }
 
+        // JSON Merge Patch (RFC 7396)
+        // 将 patch 合并到当前值（原地修改）
+        // 规则：
+        //   - patch 不是 object → 直接替换当前值
+        //   - patch 是 object → 遍历 patch 的每个键：
+        //     - 值为 null → 从当前 object 删除该键
+        //     - 否则 → 递归合并（不存在则添加）
+
+        void merge(const JsonValue &patch) {
+            if (!patch.is<JsonObject>()) {
+                _value = patch._value;
+                return;
+            }
+
+            // 当前值不是 object 时，先转为空 object
+            if (!is<JsonObject>()) {
+                _value = JsonObject();
+            }
+
+            auto &target = std::get<JsonObject>(_value);
+            const auto &patch_obj = std::get<JsonObject>(patch._value);
+
+            for (const auto &[key, value] : patch_obj) {
+                if (value.is<JsonNull>()) {
+                    target.erase(key);
+                } else if (value.is<JsonObject>() && target.contains(key) && target[key].is<JsonObject>()) {
+                    target[key].merge(value);
+                } else {
+                    target[key] = value;
+                }
+            }
+        }
+
         std::string serialize(const int indent = 0) const {
             if (indent <= 0) {
                 switch (type()) {

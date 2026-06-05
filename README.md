@@ -253,6 +253,23 @@ v.resolve("");             // 引用根值自身
 
 ------
 
+### JSON Merge Patch
+
+```cpp
+JsonValue target = object({{"a", 1}, {"b", 2}});
+JsonValue patch = object({{"b", nullptr}, {"c", 3}});
+target.merge(patch);
+// 结果：{"a": 1, "c": 3}（b 被 null 删除，c 被添加）
+
+// 嵌套 object 递归合并
+JsonValue base = object({{"a", object({{"x", 1}, {"y", 2}})}});
+JsonValue update = object({{"a", object({{"y", 99}, {"z", 3}})}});
+base.merge(update);
+// 结果：{"a": {"x": 1, "y": 99, "z": 3}}
+```
+
+------
+
 ### 迭代访问
 
 ```cpp
