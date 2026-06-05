@@ -500,7 +500,7 @@ namespace json {
                     case JsonValueType::Number: {
                         const auto num = std::get<JsonNumber>(_value);
                         if (util::isSafeToConvertToInt(num)) return std::to_string(static_cast<int>(num));
-                        return std::to_string(num);
+                        return serialize_number(num);
                     }
                     case JsonValueType::String:
                         return serialize_string(std::get<JsonString>(_value));
@@ -582,6 +582,35 @@ namespace json {
 
     private:
         JsonVariant _value;
+
+        // 数字序列化辅助函数
+        // 使用 snprintf + %g 格式化，符合 JSON 规范
+        // 处理 NaN/Inf 为 null，自动去除尾随零
+        static std::string serialize_number(double num) {
+            if (std::isnan(num) || std::isinf(num)) {
+                return "null";
+            }
+            char buf[32];
+            // %.15g 在精度和可读性之间取得平衡
+            snprintf(buf, sizeof(buf), "%.15g", num);
+            // 如果结果包含小数点但没有指数符号，去除尾随零
+            std::string result(buf);
+            auto dot_pos = result.find('.');
+            if (dot_pos != std::string::npos) {
+                auto e_pos = result.find('e');
+                if (e_pos == std::string::npos) e_pos = result.find('E');
+                if (e_pos == std::string::npos) {
+                    // 去除小数部分的尾随零
+                    size_t last_nonzero = result.find_last_not_of('0');
+                    if (last_nonzero == dot_pos) {
+                        result.erase(dot_pos); // 小数点后全是零，去除小数点
+                    } else {
+                        result.erase(last_nonzero + 1);
+                    }
+                }
+            }
+            return result;
+        }
 
         // JSON Pointer 解析的内部实现
         // 将 "~1" 解码为 "/"，"~0" 解码为 "~"
@@ -713,7 +742,7 @@ namespace json {
                 case JsonValueType::Number: {
                     const auto num = std::get<JsonNumber>(_value);
                     if (util::isSafeToConvertToInt(num)) return std::to_string(static_cast<int>(num));
-                    return std::to_string(num);
+                    return serialize_number(num);
                 }
                 case JsonValueType::String:
                     return serialize_string(std::get<JsonString>(_value));
@@ -757,8 +786,10 @@ namespace json {
 
     class JsonParser {
     public:
-        static JsonValue parse(const std::u8string &json_str) {
-            JsonParser parser(json_str);
+        static constexpr size_t default_max_depth = 256;
+
+        static JsonValue parse(const std::u8string &json_str, size_t max_depth = default_max_depth) {
+            JsonParser parser(json_str, max_depth);
             JsonValue result = parser.parse_value();
             parser.skip_whitespace();
             if (parser._pos < parser._str.size()) {
@@ -768,15 +799,18 @@ namespace json {
         }
 
         // 重载：支持从 std::string 解析
-        static JsonValue parse(const std::string &json_str) {
-            return parse(util::to_u8string(json_str));
+        static JsonValue parse(const std::string &json_str, size_t max_depth = default_max_depth) {
+            return parse(util::to_u8string(json_str), max_depth);
         }
 
     private:
         std::u8string _str;
         size_t _pos;
+        size_t _max_depth;
+        size_t _depth;
 
-        explicit JsonParser(std::u8string json_str) : _str(std::move(json_str)), _pos(0) {
+        explicit JsonParser(std::u8string json_str, size_t max_depth)
+            : _str(std::move(json_str)), _pos(0), _max_depth(max_depth), _depth(0) {
         }
 
         void skip_whitespace() {
@@ -805,7 +839,13 @@ namespace json {
                 throw std::runtime_error("JSON String Parsing Error: Unexpected end of JSON String");
             }
 
-            switch (const char8_t c = peek()) {
+            const char8_t c = peek();
+            // 深度检查：遇到数组或对象时检查是否超过最大深度
+            if ((c == u8'[' || c == u8'{') && _depth >= _max_depth) {
+                throw std::runtime_error("JSON String Parsing Error: Maximum nesting depth exceeded");
+            }
+
+            switch (c) {
                 case u8'n': return parse_null();
                 case u8't':
                 case u8'f': return parse_bool();
@@ -993,11 +1033,13 @@ namespace json {
 
         JsonValue parse_array() {
             next(); // 跳过 '['
+            ++_depth;
             JsonArray arr;
 
             skip_whitespace();
             if (peek() == u8']') {
                 next();
+                --_depth;
                 return JsonValue{arr};
             }
 
@@ -1007,6 +1049,7 @@ namespace json {
 
                 if (peek() == u8']') {
                     next();
+                    --_depth;
                     return JsonValue{arr};
                 }
 
@@ -1019,11 +1062,13 @@ namespace json {
 
         JsonValue parse_object() {
             next(); // 跳过 '{'
+            ++_depth;
             JsonObject obj;
 
             skip_whitespace();
             if (peek() == u8'}') {
                 next();
+                --_depth;
                 return JsonValue{obj};
             }
 
@@ -1047,6 +1092,7 @@ namespace json {
                 skip_whitespace();
                 if (peek() == u8'}') {
                     next();
+                    --_depth;
                     return JsonValue{obj};
                 }
 
@@ -1058,12 +1104,12 @@ namespace json {
         }
     };
 
-    inline JsonValue parse(const std::u8string &json_str) {
-        return JsonParser::parse(json_str);
+    inline JsonValue parse(const std::u8string &json_str, size_t max_depth = JsonParser::default_max_depth) {
+        return JsonParser::parse(json_str, max_depth);
     }
 
-    inline JsonValue parse(const std::string &json_str) {
-        return JsonParser::parse(json_str);
+    inline JsonValue parse(const std::string &json_str, size_t max_depth = JsonParser::default_max_depth) {
+        return JsonParser::parse(json_str, max_depth);
     }
 }
 

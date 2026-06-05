@@ -855,6 +855,97 @@ TEST(merge_empty_patch) {
 }
 
 // ============================================
+// 解析器深度限制测试
+// ============================================
+
+TEST(parse_max_depth_default) {
+    // 默认深度 256，正常嵌套应该成功
+    std::string json = R"({"a":{"b":{"c":1}}})";
+    JsonValue j = parse(json);
+    ASSERT_DOUBLE_EQ(j.resolve("/a/b/c").as<JsonNumber>(), 1.0);
+}
+
+TEST(parse_max_depth_custom) {
+    // 自定义深度限制为 3
+    std::string json = R"({"a":{"b":{"c":{"d":1}}}})";
+    ASSERT_THROW(parse(json, 3), std::runtime_error);
+}
+
+TEST(parse_max_depth_exactly_at_limit) {
+    // 刚好在深度限制内应该成功
+    std::string json = R"({"a":{"b":{"c":1}}})";
+    JsonValue j = parse(json, 3);
+    ASSERT_DOUBLE_EQ(j.resolve("/a/b/c").as<JsonNumber>(), 1.0);
+}
+
+TEST(parse_max_depth_array) {
+    // 数组也受深度限制
+    std::string json = R"([[[[1]]]])";
+    ASSERT_THROW(parse(json, 3), std::runtime_error);
+}
+
+TEST(parse_max_depth_mixed) {
+    // 混合嵌套
+    std::string json = R"({"a":[[1]]})";
+    ASSERT_THROW(parse(json, 2), std::runtime_error);
+}
+
+// ============================================
+// 数字序列化格式测试
+// ============================================
+
+TEST(serialize_number_nan) {
+    // NaN 不符合 JSON 规范，序列化为 null
+    JsonValue j(std::numeric_limits<double>::quiet_NaN());
+    ASSERT_EQ(j.serialize(), "null");
+}
+
+TEST(serialize_number_inf) {
+    JsonValue j(std::numeric_limits<double>::infinity());
+    ASSERT_EQ(j.serialize(), "null");
+
+    JsonValue j2(-std::numeric_limits<double>::infinity());
+    ASSERT_EQ(j2.serialize(), "null");
+}
+
+TEST(serialize_number_integer) {
+    // 整数应省略小数点
+    ASSERT_EQ(JsonValue(0.0).serialize(), "0");
+    ASSERT_EQ(JsonValue(42.0).serialize(), "42");
+    ASSERT_EQ(JsonValue(-100.0).serialize(), "-100");
+}
+
+TEST(serialize_number_decimal) {
+    // 小数应保留必要位数，去除尾随零
+    std::string result = JsonValue(3.14).serialize();
+    ASSERT_EQ(result, "3.14");
+
+    std::string result2 = JsonValue(1.50).serialize();
+    ASSERT_EQ(result2, "1.5");
+}
+
+TEST(serialize_number_scientific) {
+    // 极大/极小数应使用科学计数法
+    std::string result = JsonValue(1e20).serialize();
+    ASSERT_TRUE(result.find('e') != std::string::npos || result.find('E') != std::string::npos);
+
+    std::string result2 = JsonValue(1e-20).serialize();
+    ASSERT_TRUE(result2.find('e') != std::string::npos || result2.find('E') != std::string::npos);
+}
+
+TEST(serialize_number_roundtrip) {
+    // 数字往返一致性
+    std::string json = R"({"a":3.14,"b":1e20,"c":0.001})";
+    JsonValue j = parse(json);
+    std::string serialized = j.serialize();
+    JsonValue j2 = parse(serialized);
+
+    ASSERT_DOUBLE_EQ(j2.at("a").as<JsonNumber>(), 3.14);
+    ASSERT_DOUBLE_EQ(j2.at("b").as<JsonNumber>(), 1e20);
+    ASSERT_DOUBLE_EQ(j2.at("c").as<JsonNumber>(), 0.001);
+}
+
+// ============================================
 // typeName 测试
 // ============================================
 
@@ -956,16 +1047,15 @@ TEST(parse_error_number_with_trailing_chars) {
 // ============================================
 
 TEST(number_nan_inf) {
-    // NaN 和 Inf 在 JSON 中不合法，但库内部用 double 存储
-    // 序列化时 isSafeToConvertToInt 应返回 false
+    // NaN 和 Inf 不符合 JSON 规范，序列化为 null
     JsonValue j_nan(std::numeric_limits<double>::quiet_NaN());
-    // NaN 序列化不应崩溃（虽然输出不是合法 JSON）
-    std::string result = j_nan.serialize();
-    ASSERT_TRUE(result.find("nan") != std::string::npos || result.find("NaN") != std::string::npos);
+    ASSERT_EQ(j_nan.serialize(), "null");
 
     JsonValue j_inf(std::numeric_limits<double>::infinity());
-    std::string result_inf = j_inf.serialize();
-    ASSERT_TRUE(result_inf.find("inf") != std::string::npos || result_inf.find("Inf") != std::string::npos);
+    ASSERT_EQ(j_inf.serialize(), "null");
+
+    JsonValue j_neg_inf(-std::numeric_limits<double>::infinity());
+    ASSERT_EQ(j_neg_inf.serialize(), "null");
 }
 
 TEST(number_integer_formatting) {
@@ -1159,6 +1249,21 @@ int main() {
     RUN_TEST(merge_array_values);
     RUN_TEST(merge_deep_nested);
     RUN_TEST(merge_empty_patch);
+
+    // 解析器深度限制测试
+    RUN_TEST(parse_max_depth_default);
+    RUN_TEST(parse_max_depth_custom);
+    RUN_TEST(parse_max_depth_exactly_at_limit);
+    RUN_TEST(parse_max_depth_array);
+    RUN_TEST(parse_max_depth_mixed);
+
+    // 数字序列化格式测试
+    RUN_TEST(serialize_number_nan);
+    RUN_TEST(serialize_number_inf);
+    RUN_TEST(serialize_number_integer);
+    RUN_TEST(serialize_number_decimal);
+    RUN_TEST(serialize_number_scientific);
+    RUN_TEST(serialize_number_roundtrip);
 
     RUN_TEST(emplace_back_basic);
     RUN_TEST(emplace_back_from_null);
