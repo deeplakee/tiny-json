@@ -220,6 +220,53 @@ namespace json {
                    (c >= u8'a' && c <= u8'f') ||
                    (c >= u8'A' && c <= u8'F');
         }
+
+        // 验证单个 UTF-8 序列是否合法
+        // 返回该序列的字节数，如果非法返回 0
+        inline size_t validate_utf8_sequence(const char8_t *data, size_t remaining) {
+            const auto c = static_cast<uint8_t>(data[0]);
+
+            if (c <= 0x7F) {
+                return 1; // ASCII
+            }
+
+            size_t len = 0;
+            uint32_t codepoint = 0;
+
+            if ((c & 0xE0) == 0xC0) {
+                len = 2;
+                codepoint = c & 0x1F;
+            } else if ((c & 0xF0) == 0xE0) {
+                len = 3;
+                codepoint = c & 0x0F;
+            } else if ((c & 0xF8) == 0xF0) {
+                len = 4;
+                codepoint = c & 0x07;
+            } else {
+                return 0; // 非法的起始字节
+            }
+
+            if (remaining < len) return 0; // 不够长
+
+            for (size_t i = 1; i < len; ++i) {
+                const auto b = static_cast<uint8_t>(data[i]);
+                if ((b & 0xC0) != 0x80) return 0; // 非法的后续字节
+                codepoint = (codepoint << 6) | (b & 0x3F);
+            }
+
+            // 检查过长编码
+            if (len == 2 && codepoint < 0x80) return 0;
+            if (len == 3 && codepoint < 0x800) return 0;
+            if (len == 4 && codepoint < 0x10000) return 0;
+
+            // 检查代理对
+            if (codepoint >= 0xD800 && codepoint <= 0xDFFF) return 0;
+
+            // 检查超出 Unicode 范围
+            if (codepoint > 0x10FFFF) return 0;
+
+            return len;
+        }
     }
 
     class JsonValue {
@@ -1067,7 +1114,18 @@ namespace json {
                                 static_cast<char>(c));
                     }
                 } else {
+                    // 验证 UTF-8 序列
+                    size_t remaining = _str.size() - _pos + 1; // +1 因为已经 next() 了
+                    size_t seq_len = util::validate_utf8_sequence(&_str[_pos - 1], remaining);
+                    if (seq_len == 0) {
+                        throw std::runtime_error("JSON String Parsing Error: Invalid UTF-8 sequence");
+                    }
+                    // 添加当前字节（已读取）
                     raw_result += c;
+                    // 添加后续字节（如果有多字节序列）
+                    for (size_t i = 1; i < seq_len; ++i) {
+                        raw_result += next();
+                    }
                 }
             }
             throw std::runtime_error("JSON String Parsing Error: Unterminated string");

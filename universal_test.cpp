@@ -1061,6 +1061,36 @@ TEST(parse_error_number_with_trailing_chars) {
 }
 
 // ============================================
+// UTF-8 验证测试
+// ============================================
+
+TEST(parse_valid_utf8) {
+    // 合法的 UTF-8 应该能正常解析
+    std::string json = R"("Hello 你好 こんにちは 🌍")";
+    JsonValue j = parse(json);
+    ASSERT_TRUE(j.is<JsonString>());
+}
+
+TEST(parse_invalid_utf8_continuation) {
+    // 非法的后续字节：0x80 单独出现不是合法的 UTF-8
+    std::string json = "\"\x80\"";
+    ASSERT_THROW(parse(json), std::runtime_error);
+}
+
+TEST(parse_invalid_utf8_overlong) {
+    // 过长编码：0xC0 0x80 是 null 的过长表示
+    std::string json = "\"\xC0\x80\"";
+    ASSERT_THROW(parse(json), std::runtime_error);
+}
+
+TEST(parse_invalid_utf8_surrogate) {
+    // 代理对不应该出现在 UTF-8 中
+    // 0xED 0xA0 0x80 是 U+D800 的 UTF-8 编码
+    std::string json = "\"\xED\xA0\x80\"";
+    ASSERT_THROW(parse(json), std::runtime_error);
+}
+
+// ============================================
 // 数字格式化边界测试
 // ============================================
 
@@ -1311,6 +1341,12 @@ int main() {
     RUN_TEST(parse_error_trailing_comma_object);
     RUN_TEST(parse_error_invalid_unicode_escape);
     RUN_TEST(parse_error_number_with_trailing_chars);
+
+    // UTF-8 验证测试
+    RUN_TEST(parse_valid_utf8);
+    RUN_TEST(parse_invalid_utf8_continuation);
+    RUN_TEST(parse_invalid_utf8_overlong);
+    RUN_TEST(parse_invalid_utf8_surrogate);
 
     // 数字格式化边界测试
     RUN_TEST(number_nan_inf);
