@@ -439,6 +439,23 @@ namespace json {
             return std::get<JsonObject>(_value).contains(u8key);
         }
 
+        // JSON Pointer (RFC 6901)
+        // 用法：j.resolve("/a/b/0") 等价于 j["a"]["b"][0]
+        // 转义规则：~0 代表 ~，~1 代表 /
+        // 空指针 "" 引用根值自身
+
+        template<StringLike T>
+        JsonValue &resolve(T &&pointer) {
+            auto ptr = util::to_u8string(std::forward<T>(pointer));
+            return resolve_impl(ptr);
+        }
+
+        template<StringLike T>
+        const JsonValue &resolve(T &&pointer) const {
+            auto ptr = util::to_u8string(std::forward<T>(pointer));
+            return resolve_impl(ptr);
+        }
+
         std::string serialize(const int indent = 0) const {
             if (indent <= 0) {
                 switch (type()) {
@@ -531,6 +548,86 @@ namespace json {
 
     private:
         JsonVariant _value;
+
+        // JSON Pointer 解析的内部实现
+        // 将 "~1" 解码为 "/"，"~0" 解码为 "~"
+        static std::u8string unescape_pointer_token(const std::u8string &token) {
+            std::u8string result;
+            result.reserve(token.size());
+            for (size_t i = 0; i < token.size(); ++i) {
+                if (token[i] == u8'~' && i + 1 < token.size()) {
+                    if (token[i + 1] == u8'0') {
+                        result += u8'~';
+                        ++i;
+                    } else if (token[i + 1] == u8'1') {
+                        result += u8'/';
+                        ++i;
+                    } else {
+                        result += token[i];
+                    }
+                } else {
+                    result += token[i];
+                }
+            }
+            return result;
+        }
+
+        // 判断字符串是否为非负整数（用于数组索引判断）
+        static bool is_array_index(const std::u8string &token) {
+            if (token.empty()) return false;
+            for (auto c : token) {
+                if (!util::isdigit(c)) return false;
+            }
+            return true;
+        }
+
+        JsonValue &resolve_impl(const std::u8string &pointer) {
+            if (pointer.empty()) return *this;
+            if (pointer[0] != u8'/') {
+                throw std::runtime_error("JSON Pointer must start with '/' or be empty");
+            }
+
+            // 按 '/' 分割并逐级解析
+            JsonValue *current = this;
+            size_t pos = 1;
+            while (pos <= pointer.size()) {
+                size_t next = pointer.find(u8'/', pos);
+                if (next == std::u8string::npos) next = pointer.size();
+
+                std::u8string token = unescape_pointer_token(pointer.substr(pos, next - pos));
+
+                if (current->is<JsonObject>()) {
+                    auto &obj = std::get<JsonObject>(current->_value);
+                    if (!obj.contains(token)) {
+                        throw std::out_of_range("JSON Pointer: key not found");
+                    }
+                    current = &obj[token];
+                } else if (current->is<JsonArray>()) {
+                    if (!is_array_index(token)) {
+                        throw std::out_of_range("JSON Pointer: invalid array index");
+                    }
+                    size_t idx = 0;
+                    for (auto c : token) {
+                        idx = idx * 10 + (c - u8'0');
+                    }
+                    auto &arr = std::get<JsonArray>(current->_value);
+                    if (idx >= arr.size()) {
+                        throw std::out_of_range("JSON Pointer: array index out of range");
+                    }
+                    current = &arr[idx];
+                } else {
+                    throw std::runtime_error("JSON Pointer: cannot traverse into non-container value");
+                }
+
+                pos = next + 1;
+            }
+            return *current;
+        }
+
+        const JsonValue &resolve_impl(const std::u8string &pointer) const {
+            // 复用非 const 版本，去除 const 后再加回来
+            return const_cast<JsonValue *>(this)->resolve_impl(pointer);
+        }
 
         static std::string serialize_string(const JsonString &str) {
             std::string result;

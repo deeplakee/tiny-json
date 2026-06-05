@@ -89,6 +89,21 @@ int x = j["b"][0].as<JsonNumber>();
 
 ------
 
+### 3.1 JSON Pointer 深层访问（RFC 6901）
+
+```cpp
+JsonValue j = parse(R"({"user": {"name": "Alice", "scores": [95, 88, 92]}})");
+
+// 用 "/" 分隔路径
+std::string name = j.resolve("/user/name").as_string();        // "Alice"
+double score = j.resolve("/user/scores/1").as<JsonNumber>();   // 88
+
+// 转义规则：~0 代表 ~，~1 代表 /
+// 例如键 "a/b" 用 "/a~1b" 访问
+```
+
+------
+
 ### 4. 修改 JSON
 
 ```cpp
@@ -223,6 +238,17 @@ v["key"] = "value";
 v.insert("key", 123);
 v.contains("key");
 v.at("key");
+```
+
+------
+
+### JSON Pointer
+
+```cpp
+v.resolve("/a/b/0");      // 等价于 v["a"]["b"][0]
+v.resolve("/a~1b");        // 访问键 "a/b"（~1 转义 /）
+v.resolve("/a~0b");        // 访问键 "a~b"（~0 转义 ~）
+v.resolve("");             // 引用根值自身
 ```
 
 ------

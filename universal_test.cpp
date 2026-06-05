@@ -642,6 +642,117 @@ TEST(emplace_back_type_error) {
 }
 
 // ============================================
+// JSON Pointer (RFC 6901) 测试
+// ============================================
+
+TEST(json_pointer_root) {
+    JsonValue j = object({{"a", 1}});
+    // 空指针引用根值自身
+    auto &root = j.resolve("");
+    ASSERT_TRUE(root.is<JsonObject>());
+    ASSERT_DOUBLE_EQ(root.at("a").as<JsonNumber>(), 1.0);
+}
+
+TEST(json_pointer_simple_path) {
+    JsonValue j = object({
+        {"a", object({
+            {"b", object({
+                {"c", 42}
+            })}
+        })}
+    });
+    ASSERT_DOUBLE_EQ(j.resolve("/a/b/c").as<JsonNumber>(), 42.0);
+}
+
+TEST(json_pointer_array_index) {
+    JsonValue j = array({10, 20, 30});
+    ASSERT_DOUBLE_EQ(j.resolve("/1").as<JsonNumber>(), 20.0);
+}
+
+TEST(json_pointer_nested_array) {
+    JsonValue j = object({
+        {"data", array({1, 2, array({10, 20, 30})})}
+    });
+    ASSERT_DOUBLE_EQ(j.resolve("/data/2/1").as<JsonNumber>(), 20.0);
+}
+
+TEST(json_pointer_string_value) {
+    JsonValue j = object({
+        {"user", object({
+            {"name", "Alice"},
+            {"age", 30}
+        })}
+    });
+    ASSERT_EQ(j.resolve("/user/name").as_string(), "Alice");
+}
+
+TEST(json_pointer_escaped_tilde) {
+    // ~0 代表 ~
+    JsonValue j = object({
+        {"a~b", "tilde_value"}
+    });
+    ASSERT_EQ(j.resolve("/a~0b").as_string(), "tilde_value");
+}
+
+TEST(json_pointer_escaped_slash) {
+    // ~1 代表 /
+    JsonValue j = object({
+        {"a/b", "slash_value"}
+    });
+    ASSERT_EQ(j.resolve("/a~1b").as_string(), "slash_value");
+}
+
+TEST(json_pointer_escaped_both) {
+    // 同时包含 ~0 和 ~1
+    JsonValue j = object({
+        {"a/~b", "both_value"}
+    });
+    ASSERT_EQ(j.resolve("/a~1~0b").as_string(), "both_value");
+}
+
+TEST(json_pointer_modify_value) {
+    JsonValue j = object({
+        {"a", object({
+            {"b", 1}
+        })}
+    });
+    j.resolve("/a/b") = JsonValue(99);
+    ASSERT_DOUBLE_EQ(j.resolve("/a/b").as<JsonNumber>(), 99.0);
+}
+
+TEST(json_pointer_const_access) {
+    const JsonValue j = object({
+        {"x", array({1, 2, 3})}
+    });
+    ASSERT_DOUBLE_EQ(j.resolve("/x/2").as<JsonNumber>(), 3.0);
+}
+
+TEST(json_pointer_key_not_found) {
+    JsonValue j = object({{"a", 1}});
+    ASSERT_THROW(j.resolve("/b"), std::out_of_range);
+}
+
+TEST(json_pointer_array_out_of_range) {
+    JsonValue j = array({1, 2, 3});
+    ASSERT_THROW(j.resolve("/5"), std::out_of_range);
+}
+
+TEST(json_pointer_invalid_array_index) {
+    JsonValue j = object({{"a", array({1})}});
+    ASSERT_THROW(j.resolve("/a/abc"), std::out_of_range);
+}
+
+TEST(json_pointer_traverse_into_scalar) {
+    JsonValue j = object({{"a", 42}});
+    ASSERT_THROW(j.resolve("/a/b"), std::runtime_error);
+}
+
+TEST(json_pointer_invalid_format) {
+    JsonValue j = object({{"a", 1}});
+    ASSERT_THROW(j.resolve("a/b"), std::runtime_error);
+}
+
+// ============================================
 // typeName 测试
 // ============================================
 
@@ -918,6 +1029,23 @@ int main() {
     RUN_TEST(iterator_stl_count_if);
 
     // emplace_back 测试
+    // JSON Pointer 测试
+    RUN_TEST(json_pointer_root);
+    RUN_TEST(json_pointer_simple_path);
+    RUN_TEST(json_pointer_array_index);
+    RUN_TEST(json_pointer_nested_array);
+    RUN_TEST(json_pointer_string_value);
+    RUN_TEST(json_pointer_escaped_tilde);
+    RUN_TEST(json_pointer_escaped_slash);
+    RUN_TEST(json_pointer_escaped_both);
+    RUN_TEST(json_pointer_modify_value);
+    RUN_TEST(json_pointer_const_access);
+    RUN_TEST(json_pointer_key_not_found);
+    RUN_TEST(json_pointer_array_out_of_range);
+    RUN_TEST(json_pointer_invalid_array_index);
+    RUN_TEST(json_pointer_traverse_into_scalar);
+    RUN_TEST(json_pointer_invalid_format);
+
     RUN_TEST(emplace_back_basic);
     RUN_TEST(emplace_back_from_null);
     RUN_TEST(emplace_back_type_error);
