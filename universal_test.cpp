@@ -506,6 +506,115 @@ TEST(foreach_with_two_version) {
 
 
 // ============================================
+// 迭代器测试
+// ============================================
+
+TEST(iterator_array_range_for) {
+    JsonValue j = array({1, 2, 3, 4, 5});
+    double sum = 0;
+    for (auto &elem : j.as_array()) {
+        sum += elem.as<JsonNumber>();
+    }
+    ASSERT_DOUBLE_EQ(sum, 15.0);
+}
+
+TEST(iterator_array_const) {
+    const JsonValue j = array({10, 20, 30});
+    std::vector<double> values;
+    for (const auto &elem : j.as_array()) {
+        values.push_back(elem.as<JsonNumber>());
+    }
+    ASSERT_EQ(values.size(), 3);
+    ASSERT_DOUBLE_EQ(values[0], 10.0);
+    ASSERT_DOUBLE_EQ(values[1], 20.0);
+    ASSERT_DOUBLE_EQ(values[2], 30.0);
+}
+
+TEST(iterator_array_modify) {
+    JsonValue j = array({1, 2, 3});
+    for (auto &elem : j.as_array()) {
+        elem = JsonValue(elem.as<JsonNumber>() * 10);
+    }
+    ASSERT_DOUBLE_EQ(j.at(0).as<JsonNumber>(), 10.0);
+    ASSERT_DOUBLE_EQ(j.at(1).as<JsonNumber>(), 20.0);
+    ASSERT_DOUBLE_EQ(j.at(2).as<JsonNumber>(), 30.0);
+}
+
+TEST(iterator_object_range_for) {
+    JsonValue j = object({{"a", 1}, {"b", 2}, {"c", 3}});
+    double sum = 0;
+    for (auto &[key, value] : j.as_object()) {
+        sum += value.as<JsonNumber>();
+    }
+    ASSERT_DOUBLE_EQ(sum, 6.0);
+}
+
+TEST(iterator_object_const) {
+    const JsonValue j = object({{"x", 10}, {"y", 20}});
+    int count = 0;
+    for (const auto &[key, value] : j.as_object()) {
+        (void)key;
+        count++;
+    }
+    ASSERT_EQ(count, 2);
+}
+
+TEST(iterator_object_modify_values) {
+    JsonValue j = object({{"a", 1}, {"b", 2}});
+    for (auto &[key, value] : j.as_object()) {
+        value = JsonValue(value.as<JsonNumber>() * 100);
+    }
+    ASSERT_DOUBLE_EQ(j.at("a").as<JsonNumber>(), 100.0);
+    ASSERT_DOUBLE_EQ(j.at("b").as<JsonNumber>(), 200.0);
+}
+
+TEST(iterator_null_array_throws) {
+    JsonValue j;
+    ASSERT_THROW(j.as_array(), std::runtime_error);
+}
+
+TEST(iterator_null_object_throws) {
+    JsonValue j;
+    ASSERT_THROW(j.as_object(), std::runtime_error);
+}
+
+TEST(iterator_bool_array_throws) {
+    JsonValue j(true);
+    ASSERT_THROW(j.as_array(), std::runtime_error);
+}
+
+TEST(iterator_number_object_throws) {
+    JsonValue j(42);
+    ASSERT_THROW(j.as_object(), std::runtime_error);
+}
+
+TEST(iterator_string_array_throws) {
+    JsonValue j("hello");
+    ASSERT_THROW(j.as_array(), std::runtime_error);
+}
+
+TEST(iterator_stl_algorithm) {
+    JsonValue j = array({3, 1, 4, 1, 5, 9, 2, 6});
+    auto &arr = j.as_array();
+    auto it = std::min_element(arr.begin(), arr.end(),
+        [](const JsonValue &a, const JsonValue &b) {
+            return a.as<JsonNumber>() < b.as<JsonNumber>();
+        });
+    ASSERT_DOUBLE_EQ(it->as<JsonNumber>(), 1.0);
+}
+
+TEST(iterator_stl_count_if) {
+    JsonValue j = array({1, 2, 3, 4, 5, 6});
+    auto &arr = j.as_array();
+    auto even_count = std::count_if(arr.begin(), arr.end(),
+        [](const JsonValue &v) {
+            return static_cast<int>(v.as<JsonNumber>()) % 2 == 0;
+        });
+    ASSERT_EQ(even_count, 3);
+}
+
+
+// ============================================
 // emplace_back 测试
 // ============================================
 
@@ -792,6 +901,21 @@ int main() {
     RUN_TEST(foreach_array);
     RUN_TEST(foreach_object);
     RUN_TEST(foreach_with_two_version);
+
+    // 迭代器测试
+    RUN_TEST(iterator_array_range_for);
+    RUN_TEST(iterator_array_const);
+    RUN_TEST(iterator_array_modify);
+    RUN_TEST(iterator_object_range_for);
+    RUN_TEST(iterator_object_const);
+    RUN_TEST(iterator_object_modify_values);
+    RUN_TEST(iterator_null_array_throws);
+    RUN_TEST(iterator_null_object_throws);
+    RUN_TEST(iterator_bool_array_throws);
+    RUN_TEST(iterator_number_object_throws);
+    RUN_TEST(iterator_string_array_throws);
+    RUN_TEST(iterator_stl_algorithm);
+    RUN_TEST(iterator_stl_count_if);
 
     // emplace_back 测试
     RUN_TEST(emplace_back_basic);

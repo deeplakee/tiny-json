@@ -130,7 +130,24 @@ if (j["age"].is<JsonNumber>()) {
 
 ### 6. 遍历
 
-#### 数组
+#### 数组（range-based for）
+
+```cpp
+for (auto& v : j["skills"].as_array()) {
+    std::cout << v.as_string() << std::endl;
+}
+```
+
+#### 对象（range-based for）
+
+```cpp
+for (auto& [key, value] : j.as_object()) {
+    std::cout << (const char*)key.c_str() << ": "
+              << value.serialize() << std::endl;
+}
+```
+
+#### 数组（回调方式）
 
 ```cpp
 j["skills"].for_each_array([](const JsonValue& v) {
@@ -138,7 +155,7 @@ j["skills"].for_each_array([](const JsonValue& v) {
 });
 ```
 
-#### 对象
+#### 对象（回调方式）
 
 ```cpp
 j.for_each_object([](const std::u8string& key, JsonValue& value) {
@@ -213,6 +230,17 @@ v.at("key");
 ### 迭代访问
 
 ```cpp
+// range-based for
+for (auto& val : v1.as_array()) {
+    sum += val.as<JsonNumber>();
+}
+
+for (auto& [key, value] : v2.as_object()) {
+    oss << (const char*)key.c_str() << ": "
+              << value.serialize() << std::endl;
+}
+
+// 回调方式
 v1.for_each_array([&sum](const JsonValue &val) {
     sum += val.as<JsonNumber>();
 });

@@ -505,6 +505,30 @@ namespace json {
             }
         }
 
+        // 迭代器支持：直接访问底层容器，兼容 range-based for
+        // 用法：for (auto& v : j.as_array())
+        //       for (auto& [key, val] : j.as_object())
+
+        JsonArray &as_array() {
+            if (!is<JsonArray>()) throw std::runtime_error("Not a JsonArray value");
+            return std::get<JsonArray>(_value);
+        }
+
+        const JsonArray &as_array() const {
+            if (!is<JsonArray>()) throw std::runtime_error("Not a JsonArray value");
+            return std::get<JsonArray>(_value);
+        }
+
+        JsonObject &as_object() {
+            if (!is<JsonObject>()) throw std::runtime_error("Not a JsonObject value");
+            return std::get<JsonObject>(_value);
+        }
+
+        const JsonObject &as_object() const {
+            if (!is<JsonObject>()) throw std::runtime_error("Not a JsonObject value");
+            return std::get<JsonObject>(_value);
+        }
+
     private:
         JsonVariant _value;
 
