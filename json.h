@@ -17,6 +17,7 @@
 #include <limits>
 #include <string_view>
 #include <algorithm>
+#include <functional>
 
 namespace json {
     class JsonValue;
