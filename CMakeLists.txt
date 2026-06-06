@@ -9,17 +9,20 @@ target_include_directories(tiny_json INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_features(tiny_json INTERFACE cxx_std_20)
 
 # 测试可执行文件
-add_executable(universal_test universal_test.cpp)
-target_link_libraries(universal_test PRIVATE tiny_json)
+set(TEST_SOURCES
+    test_parse.cpp
+    test_serialize.cpp
+    test_accessor.cpp
+    test_json_pointer.cpp
+    test_merge_patch.cpp
+)
 
-add_executable(utf_8_test utf_8_test.cpp)
-target_link_libraries(utf_8_test PRIVATE tiny_json)
-
-# 编译器警告
-target_compile_options(universal_test PRIVATE -Wall -Wextra -Wpedantic)
-target_compile_options(utf_8_test PRIVATE -Wall -Wextra -Wpedantic)
-
-# CTest 集成
 enable_testing()
-add_test(NAME universal_test COMMAND universal_test)
-add_test(NAME utf_8_test COMMAND utf_8_test)
+
+foreach(test_src ${TEST_SOURCES})
+    get_filename_component(test_name ${test_src} NAME_WE)
+    add_executable(${test_name} ${test_src})
+    target_link_libraries(${test_name} PRIVATE tiny_json)
+    target_compile_options(${test_name} PRIVATE -Wall -Wextra -Wpedantic)
+    add_test(NAME ${test_name} COMMAND ${test_name})
+endforeach()
