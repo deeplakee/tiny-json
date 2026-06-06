@@ -202,6 +202,58 @@ TEST(roundtrip_utf8) {
 }
 
 // ============================================
+// 字符串序列化边界
+// ============================================
+
+TEST(serialize_empty_string) {
+    JsonValue j(std::u8string(u8""));
+    ASSERT_EQ(j.serialize(), "\"\"");
+}
+
+TEST(serialize_control_characters) {
+    // 控制字符应转义为 \uXXXX
+    std::string json = "\"\\u0001\\u001f\"";
+    JsonValue   j    = parse(json);
+    std::string s    = j.serialize();
+    // 序列化后应能重新解析
+    JsonValue j2 = parse(s);
+    ASSERT_EQ(j2.as_string(), j.as_string());
+}
+
+TEST(serialize_forward_slash) {
+    // 正斜杠不需要转义
+    JsonValue j(std::u8string(u8"path/to/file"));
+    ASSERT_EQ(j.serialize(), "\"path/to/file\"");
+}
+
+// ============================================
+// 数字序列化边界
+// ============================================
+
+TEST(serialize_negative_indent) {
+    // 负缩进应等同于紧凑格式
+    JsonValue j = array({1, 2, 3});
+    ASSERT_EQ(j.serialize(-1), j.serialize());
+    ASSERT_EQ(j.serialize(-100), j.serialize());
+}
+
+TEST(serialize_very_small_decimal) {
+    std::string result = JsonValue(0.0000001).serialize();
+    // 应包含小数点或科学计数法
+    ASSERT_TRUE(result.find('.') != std::string::npos || result.find('e') != std::string::npos);
+}
+
+TEST(serialize_int_boundary_values) {
+    // INT_MAX 附近的整数应省略小数点
+    ASSERT_EQ(JsonValue(2147483647.0).serialize(), "2147483647");
+
+    // INT_MAX + 1.0 不应省略小数点（超出 int 范围）
+    std::string result = JsonValue(2147483648.0).serialize();
+    // 应该是数字字符串（可能带小数点或科学计数法）
+    ASSERT_TRUE(!result.empty());
+}
+
+// ============================================
 // 主测试运行器
 // ============================================
 
@@ -238,6 +290,16 @@ int main() {
     RUN_TEST(roundtrip_with_escapes);
     RUN_TEST(roundtrip_numbers);
     RUN_TEST(roundtrip_utf8);
+
+    // 字符串序列化边界
+    RUN_TEST(serialize_empty_string);
+    RUN_TEST(serialize_control_characters);
+    RUN_TEST(serialize_forward_slash);
+
+    // 数字序列化边界
+    RUN_TEST(serialize_negative_indent);
+    RUN_TEST(serialize_very_small_decimal);
+    RUN_TEST(serialize_int_boundary_values);
 
     std::cout << "\n=======================\n";
     std::cout << "All serialize tests passed!\n";

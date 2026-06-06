@@ -618,6 +618,245 @@ TEST(utf8_array_multilingual) {
 }
 
 // ============================================
+// copy/move 语义
+// ============================================
+
+TEST(copy_construct_independent) {
+    JsonValue original = object({{"a", 1}, {"b", array({1, 2, 3})}});
+    JsonValue copy     = original;
+
+    // 修改 copy 不影响 original
+    copy["a"]    = 99;
+    copy["b"][0] = 100;
+
+    ASSERT_DOUBLE_EQ(original.at("a").as<JsonNumber>(), 1.0);
+    ASSERT_DOUBLE_EQ(original.at("b").at(0).as<JsonNumber>(), 1.0);
+    ASSERT_DOUBLE_EQ(copy.at("a").as<JsonNumber>(), 99.0);
+    ASSERT_DOUBLE_EQ(copy.at("b").at(0).as<JsonNumber>(), 100.0);
+}
+
+TEST(copy_assign_independent) {
+    JsonValue original = array({10, 20, 30});
+    JsonValue copy;
+    copy = original;
+
+    copy[0] = 999;
+    ASSERT_DOUBLE_EQ(original.at(0).as<JsonNumber>(), 10.0);
+    ASSERT_DOUBLE_EQ(copy.at(0).as<JsonNumber>(), 999.0);
+}
+
+TEST(move_construct) {
+    JsonValue src = object({{"key", "value"}});
+    JsonValue dst = std::move(src);
+
+    ASSERT_EQ(dst.at("key").as_string(), "value");
+    ASSERT_TRUE(dst.is<JsonObject>());
+}
+
+TEST(move_assign) {
+    JsonValue src = array({1, 2, 3});
+    JsonValue dst;
+    dst = std::move(src);
+
+    ASSERT_EQ(dst.size(), 3);
+    ASSERT_DOUBLE_EQ(dst.at(0).as<JsonNumber>(), 1.0);
+}
+
+TEST(copy_construct_string) {
+    JsonString s = u8"hello world";
+    JsonValue  j1(s);
+    JsonValue  j2(j1);
+
+    ASSERT_EQ(j2.as_string(), "hello world");
+    // 修改 j2 不影响 j1
+    j2 = JsonValue("changed");
+    ASSERT_EQ(j1.as_string(), "hello world");
+}
+
+TEST(move_construct_string) {
+    JsonString s = u8"moved string";
+    JsonValue  j1(std::move(s));
+    ASSERT_EQ(j1.as_string(), "moved string");
+}
+
+TEST(move_construct_array) {
+    JsonArray arr = {1, 2, 3};
+    JsonValue j(std::move(arr));
+    ASSERT_EQ(j.size(), 3);
+    ASSERT_DOUBLE_EQ(j.at(0).as<JsonNumber>(), 1.0);
+}
+
+TEST(move_construct_object) {
+    JsonObject obj;
+    obj[u8"key"] = JsonValue("value");
+    JsonValue j(std::move(obj));
+    ASSERT_EQ(j.size(), 1);
+    ASSERT_EQ(j.at("key").as_string(), "value");
+}
+
+// ============================================
+// push_back 边界情况
+// ============================================
+
+TEST(push_back_from_null) {
+    JsonValue j;
+    ASSERT_TRUE(j.is<JsonNull>());
+
+    j.push_back(JsonValue(42));
+    ASSERT_TRUE(j.is<JsonArray>());
+    ASSERT_EQ(j.size(), 1);
+    ASSERT_DOUBLE_EQ(j.at(0).as<JsonNumber>(), 42.0);
+}
+
+TEST(push_back_type_error) {
+    JsonValue j(42);
+    ASSERT_THROW(j.push_back(JsonValue(1)), std::runtime_error);
+
+    JsonValue j2("hello");
+    ASSERT_THROW(j2.push_back(JsonValue(1)), std::runtime_error);
+
+    JsonValue j3(true);
+    ASSERT_THROW(j3.push_back(JsonValue(1)), std::runtime_error);
+}
+
+TEST(push_back_with_move) {
+    JsonValue j = array({});
+    JsonValue val("hello");
+    j.push_back(std::move(val));
+    ASSERT_EQ(j.size(), 1);
+    ASSERT_EQ(j.at(0).as_string(), "hello");
+}
+
+// ============================================
+// insert 边界情况
+// ============================================
+
+TEST(insert_from_null) {
+    JsonValue j;
+    j.insert("key", JsonValue(42));
+    ASSERT_TRUE(j.is<JsonObject>());
+    ASSERT_EQ(j.size(), 1);
+    ASSERT_DOUBLE_EQ(j.at("key").as<JsonNumber>(), 42.0);
+}
+
+TEST(insert_type_error) {
+    JsonValue j(42);
+    ASSERT_THROW(j.insert("key", JsonValue(1)), std::runtime_error);
+
+    JsonValue j2 = array({});
+    ASSERT_THROW(j2.insert("key", JsonValue(1)), std::runtime_error);
+
+    JsonValue j3(true);
+    ASSERT_THROW(j3.insert("key", JsonValue(1)), std::runtime_error);
+}
+
+// ============================================
+// contains 边界情况
+// ============================================
+
+TEST(contains_on_non_object_throws) {
+    JsonValue j_null;
+    ASSERT_THROW(j_null.contains("key"), std::runtime_error);
+
+    JsonValue j_num(42);
+    ASSERT_THROW(j_num.contains("key"), std::runtime_error);
+
+    JsonValue j_str("hello");
+    ASSERT_THROW(j_str.contains("key"), std::runtime_error);
+
+    JsonValue j_arr = array({});
+    ASSERT_THROW(j_arr.contains("key"), std::runtime_error);
+
+    JsonValue j_bool(true);
+    ASSERT_THROW(j_bool.contains("key"), std::runtime_error);
+}
+
+// ============================================
+// as<T>() const 错误路径
+// ============================================
+
+TEST(const_as_type_mismatch_throws) {
+    const JsonValue j(42);
+    ASSERT_THROW(j.as<JsonString>(), std::runtime_error);
+    ASSERT_THROW(j.as<JsonBool>(), std::runtime_error);
+    ASSERT_THROW(j.as<JsonNull>(), std::runtime_error);
+    ASSERT_THROW(j.as<JsonArray>(), std::runtime_error);
+    ASSERT_THROW(j.as<JsonObject>(), std::runtime_error);
+}
+
+TEST(const_as_string_type_mismatch) {
+    const JsonValue j_null;
+    ASSERT_THROW(j_null.as_string(), std::runtime_error);
+
+    const JsonValue j_bool(true);
+    ASSERT_THROW(j_bool.as_string(), std::runtime_error);
+
+    const JsonValue j_arr = array({});
+    ASSERT_THROW(j_arr.as_string(), std::runtime_error);
+
+    const JsonValue j_obj = object({});
+    ASSERT_THROW(j_obj.as_string(), std::runtime_error);
+}
+
+// ============================================
+// 数组自动填充验证
+// ============================================
+
+TEST(array_auto_fill_null) {
+    JsonValue j;
+    j[5] = 99;
+
+    ASSERT_EQ(j.size(), 6);
+    ASSERT_TRUE(j.at(0).is<JsonNull>());
+    ASSERT_TRUE(j.at(1).is<JsonNull>());
+    ASSERT_TRUE(j.at(2).is<JsonNull>());
+    ASSERT_TRUE(j.at(3).is<JsonNull>());
+    ASSERT_TRUE(j.at(4).is<JsonNull>());
+    ASSERT_DOUBLE_EQ(j.at(5).as<JsonNumber>(), 99.0);
+}
+
+// ============================================
+// size() 边界情况
+// ============================================
+
+TEST(size_empty_string) {
+    JsonValue j(std::u8string(u8""));
+    ASSERT_EQ(j.size(), 0);
+}
+
+TEST(size_ascii_string) {
+    JsonValue j(std::u8string(u8"hello"));
+    ASSERT_EQ(j.size(), 5);
+}
+
+TEST(size_emoji_only) {
+    // 每个 emoji 是 1 个字符（尽管占 4 字节）
+    JsonValue j(std::u8string(u8"🍎🍊🍋"));
+    ASSERT_EQ(j.size(), 3);
+}
+
+TEST(size_bool_throws) {
+    JsonValue j(true);
+    ASSERT_THROW(j.size(), std::runtime_error);
+}
+
+// ============================================
+// u8string 参数重载
+// ============================================
+
+TEST(parse_u8string_overload) {
+    std::u8string json = u8"{\"name\": \"Alice\"}";
+    JsonValue     j    = parse(json);
+    ASSERT_EQ(j.at("name").as_string(), "Alice");
+}
+
+TEST(resolve_u8string_overload) {
+    JsonValue     j   = object({{"a", array({1, 2, 3})}});
+    std::u8string ptr = u8"/a/1";
+    ASSERT_DOUBLE_EQ(j.resolve(ptr).as<JsonNumber>(), 2.0);
+}
+
+// ============================================
 // 主测试运行器
 // ============================================
 
@@ -694,6 +933,45 @@ int main() {
     // UTF-8 size
     RUN_TEST(utf8_string_size);
     RUN_TEST(utf8_array_multilingual);
+
+    // copy/move 语义
+    RUN_TEST(copy_construct_independent);
+    RUN_TEST(copy_assign_independent);
+    RUN_TEST(move_construct);
+    RUN_TEST(move_assign);
+    RUN_TEST(copy_construct_string);
+    RUN_TEST(move_construct_string);
+    RUN_TEST(move_construct_array);
+    RUN_TEST(move_construct_object);
+
+    // push_back 边界
+    RUN_TEST(push_back_from_null);
+    RUN_TEST(push_back_type_error);
+    RUN_TEST(push_back_with_move);
+
+    // insert 边界
+    RUN_TEST(insert_from_null);
+    RUN_TEST(insert_type_error);
+
+    // contains 边界
+    RUN_TEST(contains_on_non_object_throws);
+
+    // const as<T>() 错误路径
+    RUN_TEST(const_as_type_mismatch_throws);
+    RUN_TEST(const_as_string_type_mismatch);
+
+    // 数组自动填充
+    RUN_TEST(array_auto_fill_null);
+
+    // size() 边界
+    RUN_TEST(size_empty_string);
+    RUN_TEST(size_ascii_string);
+    RUN_TEST(size_emoji_only);
+    RUN_TEST(size_bool_throws);
+
+    // u8string 重载
+    RUN_TEST(parse_u8string_overload);
+    RUN_TEST(resolve_u8string_overload);
 
     std::cout << "\n======================\n";
     std::cout << "All accessor tests passed!\n";

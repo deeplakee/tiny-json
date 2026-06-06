@@ -119,6 +119,54 @@ TEST(merge_empty_patch) {
     ASSERT_DOUBLE_EQ(target.at("a").as<JsonNumber>(), 1.0);
 }
 
+TEST(merge_replace_scalar_with_object) {
+    JsonValue target = object({{"a", 1}});
+    JsonValue patch  = object({{"a", object({{"b", 2}})}});
+    target.merge(patch);
+    ASSERT_TRUE(target.at("a").is<JsonObject>());
+    ASSERT_DOUBLE_EQ(target.at("a").at("b").as<JsonNumber>(), 2.0);
+}
+
+TEST(merge_replace_object_with_scalar) {
+    JsonValue target = object({{"a", object({{"b", 1}})}});
+    JsonValue patch  = object({{"a", 42}});
+    target.merge(patch);
+    ASSERT_TRUE(target.at("a").is<JsonNumber>());
+    ASSERT_DOUBLE_EQ(target.at("a").as<JsonNumber>(), 42.0);
+}
+
+TEST(merge_null_on_nonexistent_key) {
+    JsonValue target = object({{"a", 1}});
+    JsonValue patch  = object({{"x", nullptr}});
+    target.merge(patch);
+    // 删除不存在的键应该无影响
+    ASSERT_EQ(target.size(), 1);
+    ASSERT_TRUE(target.contains("a"));
+}
+
+TEST(merge_remove_all_keys) {
+    JsonValue target = object({{"a", 1}, {"b", 2}, {"c", 3}});
+    JsonValue patch  = object({{"a", nullptr}, {"b", nullptr}, {"c", nullptr}});
+    target.merge(patch);
+    ASSERT_EQ(target.size(), 0);
+    ASSERT_TRUE(target.is<JsonObject>());
+}
+
+TEST(merge_patch_is_null) {
+    JsonValue target = object({{"a", 1}});
+    JsonValue patch(nullptr);
+    target.merge(patch);
+    ASSERT_TRUE(target.is<JsonNull>());
+}
+
+TEST(merge_patch_is_array) {
+    JsonValue target = object({{"a", 1}});
+    JsonValue patch  = array({10, 20});
+    target.merge(patch);
+    ASSERT_TRUE(target.is<JsonArray>());
+    ASSERT_EQ(target.size(), 2);
+}
+
 // ============================================
 // 主测试运行器
 // ============================================
@@ -141,6 +189,12 @@ int main() {
     RUN_TEST(merge_array_values);
     RUN_TEST(merge_deep_nested);
     RUN_TEST(merge_empty_patch);
+    RUN_TEST(merge_replace_scalar_with_object);
+    RUN_TEST(merge_replace_object_with_scalar);
+    RUN_TEST(merge_null_on_nonexistent_key);
+    RUN_TEST(merge_remove_all_keys);
+    RUN_TEST(merge_patch_is_null);
+    RUN_TEST(merge_patch_is_array);
 
     std::cout << "\n==============================\n";
     std::cout << "All Merge Patch tests passed!\n";

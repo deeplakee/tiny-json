@@ -124,6 +124,28 @@ TEST(resolve_invalid_format) {
     ASSERT_THROW(j.resolve("a/b"), std::runtime_error);
 }
 
+TEST(resolve_traverse_into_string) {
+    JsonValue j = object({{"a", "hello"}});
+    ASSERT_THROW(j.resolve("/a/b"), std::runtime_error);
+}
+
+TEST(resolve_traverse_into_bool) {
+    JsonValue j = object({{"a", true}});
+    ASSERT_THROW(j.resolve("/a/b"), std::runtime_error);
+}
+
+TEST(resolve_traverse_into_null) {
+    JsonValue j = object({{"a", nullptr}});
+    ASSERT_THROW(j.resolve("/a/b"), std::runtime_error);
+}
+
+TEST(resolve_complex_path) {
+    JsonValue j = object({
+            {"data", array({object({{"items", array({1, 2, 3})}})})}
+    });
+    ASSERT_DOUBLE_EQ(j.resolve("/data/0/items/2").as<JsonNumber>(), 3.0);
+}
+
 // ============================================
 // 主测试运行器
 // ============================================
@@ -151,6 +173,10 @@ int main() {
     RUN_TEST(resolve_invalid_array_index);
     RUN_TEST(resolve_traverse_into_scalar);
     RUN_TEST(resolve_invalid_format);
+    RUN_TEST(resolve_traverse_into_string);
+    RUN_TEST(resolve_traverse_into_bool);
+    RUN_TEST(resolve_traverse_into_null);
+    RUN_TEST(resolve_complex_path);
 
     std::cout << "\n==========================\n";
     std::cout << "All JSON Pointer tests passed!\n";

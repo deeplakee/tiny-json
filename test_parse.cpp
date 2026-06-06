@@ -361,6 +361,78 @@ TEST(parse_utf8_invalid_low_surrogate) {
 }
 
 // ============================================
+// 数字解析边界
+// ============================================
+
+TEST(parse_number_negative_zero) {
+    JsonValue j = parse("-0");
+    ASSERT_DOUBLE_EQ(j.as<JsonNumber>(), 0.0);
+}
+
+TEST(parse_number_zero_decimal) {
+    JsonValue j = parse("0.0");
+    ASSERT_DOUBLE_EQ(j.as<JsonNumber>(), 0.0);
+}
+
+TEST(parse_number_leading_plus_invalid) {
+    ASSERT_THROW(parse("+0"), std::runtime_error);
+    ASSERT_THROW(parse("+1"), std::runtime_error);
+}
+
+TEST(parse_number_leading_zero_invalid) {
+    ASSERT_THROW(parse("01"), std::runtime_error);
+    ASSERT_THROW(parse("007"), std::runtime_error);
+}
+
+TEST(parse_number_trailing_dot_invalid) {
+    ASSERT_THROW(parse("1."), std::runtime_error);
+}
+
+TEST(parse_number_exponent_no_digits_invalid) {
+    ASSERT_THROW(parse("1e"), std::runtime_error);
+    ASSERT_THROW(parse("1E"), std::runtime_error);
+    ASSERT_THROW(parse("1e+"), std::runtime_error);
+    ASSERT_THROW(parse("1e-"), std::runtime_error);
+}
+
+TEST(parse_nan_infinity_invalid) {
+    ASSERT_THROW(parse("NaN"), std::runtime_error);
+    ASSERT_THROW(parse("Infinity"), std::runtime_error);
+    ASSERT_THROW(parse("-Infinity"), std::runtime_error);
+}
+
+// ============================================
+// 字符串解析边界
+// ============================================
+
+TEST(parse_empty_string) {
+    JsonValue j = parse("\"\"");
+    ASSERT_TRUE(j.is<JsonString>());
+    ASSERT_EQ(j.as_string(), "");
+}
+
+TEST(parse_string_escaped_forward_slash) {
+    JsonValue j = parse("\"hello\\/world\"");
+    ASSERT_EQ(j.as_string(), "hello/world");
+}
+
+TEST(parse_string_unicode_forward_slash) {
+    JsonValue j = parse("\"\\u002F\"");
+    ASSERT_EQ(j.as_string(), "/");
+}
+
+// ============================================
+// 尾部数据检测
+// ============================================
+
+TEST(parse_trailing_data_after_value) {
+    ASSERT_THROW(parse("1 2"), std::runtime_error);
+    ASSERT_THROW(parse("null true"), std::runtime_error);
+    ASSERT_THROW(parse("\"hello\" \"world\""), std::runtime_error);
+    ASSERT_THROW(parse("[] {}"), std::runtime_error);
+}
+
+// ============================================
 // 解析错误路径
 // ============================================
 
@@ -504,6 +576,23 @@ int main() {
     RUN_TEST(parse_utf8_invalid_surrogate);
     RUN_TEST(parse_utf8_invalid_surrogate_pair_incomplete);
     RUN_TEST(parse_utf8_invalid_low_surrogate);
+
+    // 数字解析边界
+    RUN_TEST(parse_number_negative_zero);
+    RUN_TEST(parse_number_zero_decimal);
+    RUN_TEST(parse_number_leading_plus_invalid);
+    RUN_TEST(parse_number_leading_zero_invalid);
+    RUN_TEST(parse_number_trailing_dot_invalid);
+    RUN_TEST(parse_number_exponent_no_digits_invalid);
+    RUN_TEST(parse_nan_infinity_invalid);
+
+    // 字符串解析边界
+    RUN_TEST(parse_empty_string);
+    RUN_TEST(parse_string_escaped_forward_slash);
+    RUN_TEST(parse_string_unicode_forward_slash);
+
+    // 尾部数据检测
+    RUN_TEST(parse_trailing_data_after_value);
 
     // 解析错误路径
     RUN_TEST(parse_error_empty_input);
