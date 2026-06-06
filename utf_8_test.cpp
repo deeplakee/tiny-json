@@ -16,7 +16,7 @@ using namespace json;
 
 TEST(utf8_chinese_characters) {
     // 测试中文字符的序列化和解析
-    JsonValue j1 = JsonValue(std::u8string(u8"你好世界"));
+    JsonValue   j1 = JsonValue(std::u8string(u8"你好世界"));
     std::string serialized = j1.serialize();
 
     std::cout << "中文字符串序列化: " << serialized << std::endl;
@@ -29,7 +29,7 @@ TEST(utf8_chinese_characters) {
 
 TEST(utf8_japanese_characters) {
     // 测试日文字符
-    JsonValue j1 = JsonValue(std::u8string(u8"こんにちは世界"));
+    JsonValue   j1 = JsonValue(std::u8string(u8"こんにちは世界"));
     std::string serialized = j1.serialize();
 
     JsonValue parsed = parse(serialized);
@@ -38,7 +38,7 @@ TEST(utf8_japanese_characters) {
 
 TEST(utf8_korean_characters) {
     // 测试韩文字符
-    JsonValue j1 = JsonValue(std::u8string(u8"안녕하세요 세계"));
+    JsonValue   j1 = JsonValue(std::u8string(u8"안녕하세요 세계"));
     std::string serialized = j1.serialize();
 
     JsonValue parsed = parse(serialized);
@@ -47,7 +47,7 @@ TEST(utf8_korean_characters) {
 
 TEST(utf8_emoji_characters) {
     // 测试emoji字符
-    JsonValue j1 = JsonValue(std::u8string(u8"Hello 😀🌍🎉"));
+    JsonValue   j1 = JsonValue(std::u8string(u8"Hello 😀🌍🎉"));
     std::string serialized = j1.serialize();
 
     std::cout << "Emoji字符串序列化: " << serialized << std::endl;
@@ -59,8 +59,8 @@ TEST(utf8_emoji_characters) {
 TEST(utf8_mixed_languages) {
     // 测试混合语言
     std::u8string mixed = u8"English 中文 日本語 한국어 العربية";
-    JsonValue j1(mixed);
-    std::string serialized = j1.serialize();
+    JsonValue     j1(mixed);
+    std::string   serialized = j1.serialize();
 
     JsonValue parsed = parse(serialized);
     ASSERT_EQ(parsed.as_string(), util::to_std_string(mixed));
@@ -69,8 +69,8 @@ TEST(utf8_mixed_languages) {
 TEST(utf8_special_symbols) {
     // 测试特殊符号
     std::u8string symbols = u8"© ® ™ € £ ¥ § ¶ † ‡ • … ‰ ⁄";
-    JsonValue j1(symbols);
-    std::string serialized = j1.serialize();
+    JsonValue     j1(symbols);
+    std::string   serialized = j1.serialize();
 
     JsonValue parsed = parse(serialized);
     ASSERT_EQ(parsed.as_string(), util::to_std_string(symbols));
@@ -83,7 +83,7 @@ TEST(utf8_special_symbols) {
 TEST(unicode_escape_basic) {
     // 测试基本Unicode转义 \uXXXX
     std::string json = R"("\u0048\u0065\u006c\u006c\u006f")"; // "Hello"
-    JsonValue j = parse(json);
+    JsonValue   j = parse(json);
     ASSERT_EQ(j.as_string(), "Hello");
 }
 
@@ -91,7 +91,7 @@ TEST(unicode_escape_chinese) {
     // 测试中文Unicode转义
     // 你好 = \u4F60\u597D
     std::string json = R"("\u4F60\u597D")";
-    JsonValue j = parse(json);
+    JsonValue   j = parse(json);
     ASSERT_EQ(j.as_string(), "你好");
 }
 
@@ -99,7 +99,7 @@ TEST(unicode_escape_japanese) {
     // 测试日文Unicode转义
     // こんにちは = \u3053\u3093\u306B\u3061\u306F
     std::string json = R"("\u3053\u3093\u306B\u3061\u306F")";
-    JsonValue j = parse(json);
+    JsonValue   j = parse(json);
     ASSERT_EQ(j.as_string(), "こんにちは");
 }
 
@@ -107,7 +107,7 @@ TEST(unicode_escape_korean) {
     // 测试韩文Unicode转义
     // 안녕 = \uC548\uB155
     std::string json = R"("\uC548\uB155")";
-    JsonValue j = parse(json);
+    JsonValue   j = parse(json);
     ASSERT_EQ(j.as_string(), "안녕");
 }
 
@@ -115,7 +115,7 @@ TEST(unicode_escape_surrogate_pairs) {
     // 测试代理对（Surrogate Pairs）
     // 😀 = U+1F600 = \uD83D\uDE00
     std::string json = R"("\uD83D\uDE00")";
-    JsonValue j = parse(json);
+    JsonValue   j = parse(json);
     ASSERT_EQ(j.as_string(), "😀");
 }
 
@@ -123,14 +123,14 @@ TEST(unicode_escape_multiple_surrogates) {
     // 测试多个emoji的代理对
     // 🌍 = \uD83C\uDF0D, 🎉 = \uD83C\uDF89
     std::string json = R"("\uD83C\uDF0D \uD83C\uDF89")";
-    JsonValue j = parse(json);
+    JsonValue   j = parse(json);
     ASSERT_EQ(j.as_string(), "🌍 🎉");
 }
 
 TEST(unicode_escape_mixed_text) {
     // 测试混合普通文本和Unicode转义
     std::string json = R"("Hello \u4E16\u754C !")"; // Hello 世界 !
-    JsonValue j = parse(json);
+    JsonValue   j = parse(json);
     ASSERT_EQ(j.as_string(), "Hello 世界 !");
 }
 
@@ -142,20 +142,20 @@ TEST(unicode_escape_all_bmp) {
     };
 
     std::vector<TestCase> tests = {
-        {"\\u00E9", "é"}, // 拉丁字母
-        {"\\u03B1", "α"}, // 希腊字母
-        {"\\u0416", "Ж"}, // 西里尔字母
-        {"\\u05D0", "א"}, // 希伯来字母
-        {"\\u0627", "ا"}, // 阿拉伯字母
-        {"\\u0E01", "ก"}, // 泰文字母
-        {"\\u3042", "あ"}, // 日文平假名
-        {"\\u30A2", "ア"}, // 日文片假名
-        {"\\uAC00", "가"}, // 韩文
+            {"\\u00E9", "é"}, // 拉丁字母
+            {"\\u03B1", "α"}, // 希腊字母
+            {"\\u0416", "Ж"}, // 西里尔字母
+            {"\\u05D0", "א"}, // 希伯来字母
+            {"\\u0627", "ا"}, // 阿拉伯字母
+            {"\\u0E01", "ก"}, // 泰文字母
+            {"\\u3042", "あ"}, // 日文平假名
+            {"\\u30A2", "ア"}, // 日文片假名
+            {"\\uAC00", "가"}, // 韩文
     };
 
     for (const auto &test: tests) {
         std::string json = "\"" + test.json_escape + "\"";
-        JsonValue j = parse(json);
+        JsonValue   j = parse(json);
         ASSERT_EQ(j.as_string(), test.expected);
     }
 }
@@ -167,9 +167,9 @@ TEST(unicode_escape_all_bmp) {
 TEST(utf8_object_keys_chinese) {
     // 使用中文字段名构建JSON对象
     JsonValue j = object({
-        {"姓名", "张三"},
-        {"年龄", 25},
-        {"城市", "北京"}
+            {"姓名", "张三"},
+            {"年龄", 25},
+            {"城市", "北京"}
     });
 
     std::string serialized = j.serialize();
@@ -185,15 +185,15 @@ TEST(utf8_object_keys_chinese) {
 TEST(utf8_object_keys_mixed) {
     // 混合语言字段名
     JsonValue j = object({
-        {"name", "Alice"},
-        {"名前", "アリス"},
-        {"이름", "앨리스"},
-        {"姓名", "爱丽丝"},
-        {"الاسم", "أليس"}
+            {"name", "Alice"},
+            {"名前", "アリス"},
+            {"이름", "앨리스"},
+            {"姓名", "爱丽丝"},
+            {"الاسم", "أليس"}
     });
 
     std::string serialized = j.serialize();
-    JsonValue parsed = parse(serialized);
+    JsonValue   parsed = parse(serialized);
 
     ASSERT_EQ(parsed.at(u8"name").as_string(), "Alice");
     ASSERT_EQ(parsed.at(u8"名前").as_string(), "アリス");
@@ -205,9 +205,9 @@ TEST(utf8_object_keys_mixed) {
 TEST(utf8_object_keys_emoji) {
     // Emoji字段名（虽然不推荐但JSON标准允许）
     JsonValue j = object({
-        {"😀", "happy"},
-        {"🌟", "star"},
-        {"🎵", "music"}
+            {"😀", "happy"},
+            {"🌟", "star"},
+            {"🎵", "music"}
     });
 
     std::string serialized = j.serialize();
@@ -226,12 +226,12 @@ TEST(utf8_object_keys_emoji) {
 TEST(utf8_array_multilingual) {
     // 创建包含多语言字符串的数组
     JsonValue j = array({
-        JsonValue(std::u8string(u8"Hello")),
-        JsonValue(std::u8string(u8"你好")),
-        JsonValue(std::u8string(u8"こんにちは")),
-        JsonValue(std::u8string(u8"안녕하세요")),
-        JsonValue(std::u8string(u8"مرحبا")),
-        JsonValue(std::u8string(u8"😀🌍"))
+            JsonValue(std::u8string(u8"Hello")),
+            JsonValue(std::u8string(u8"你好")),
+            JsonValue(std::u8string(u8"こんにちは")),
+            JsonValue(std::u8string(u8"안녕하세요")),
+            JsonValue(std::u8string(u8"مرحبا")),
+            JsonValue(std::u8string(u8"😀🌍"))
     });
 
     std::string serialized = j.serialize();
@@ -254,24 +254,24 @@ TEST(utf8_array_multilingual) {
 TEST(utf8_complex_nested_structure) {
     // 创建包含UTF-8的复杂嵌套结构
     JsonValue j = object({
-        {
-            "用户", object({
-                {"姓名", "李四"},
-                {
-                    "爱好", array({
-                        JsonValue(std::u8string(u8"编程 💻")),
-                        JsonValue(std::u8string(u8"阅读 📚")),
-                        JsonValue(std::u8string(u8"音乐 🎵"))
+            {
+                    "用户", object({
+                            {"姓名", "李四"},
+                            {
+                                    "爱好", array({
+                                            JsonValue(std::u8string(u8"编程 💻")),
+                                            JsonValue(std::u8string(u8"阅读 📚")),
+                                            JsonValue(std::u8string(u8"音乐 🎵"))
+                                    })
+                            },
+                            {
+                                    "地址", object({
+                                            {"国家", "中国"},
+                                            {"城市", "上海"}
+                                    })
+                            }
                     })
-                },
-                {
-                    "地址", object({
-                        {"国家", "中国"},
-                        {"城市", "上海"}
-                    })
-                }
-            })
-        }
+            }
     });
 
     std::string serialized = j.serialize(2);
@@ -293,10 +293,10 @@ TEST(utf8_complex_nested_structure) {
 
 TEST(utf8_foreach_array_with_unicode) {
     const JsonValue j = array({
-        JsonValue(std::u8string(u8"苹果 🍎")),
-        JsonValue(std::u8string(u8"香蕉 🍌")),
-        JsonValue(std::u8string(u8"橙子 🍊")),
-        JsonValue(std::u8string(u8"葡萄 🍇"))
+            JsonValue(std::u8string(u8"苹果 🍎")),
+            JsonValue(std::u8string(u8"香蕉 🍌")),
+            JsonValue(std::u8string(u8"橙子 🍊")),
+            JsonValue(std::u8string(u8"葡萄 🍇"))
     });
 
     std::vector<std::string> fruits;
@@ -315,9 +315,9 @@ TEST(utf8_foreach_array_with_unicode) {
 
 TEST(utf8_foreach_object_with_unicode) {
     const JsonValue j = object({
-        {"フルーツ", "りんご"},
-        {"やさい", "にんじん"},
-        {"にく", "ぎゅうにく"}
+            {"フルーツ", "りんご"},
+            {"やさい", "にんじん"},
+            {"にく", "ぎゅうにく"}
     });
 
     std::vector<std::pair<std::string, std::string> > items;
@@ -342,9 +342,9 @@ TEST(utf8_foreach_object_with_unicode) {
 TEST(utf8_modify_array_with_foreach) {
     // 使用非const版本修改包含Unicode的数组
     JsonValue j = array({
-        JsonValue(std::u8string(u8"hello")),
-        JsonValue(std::u8string(u8"world")),
-        JsonValue(std::u8string(u8"你好"))
+            JsonValue(std::u8string(u8"hello")),
+            JsonValue(std::u8string(u8"world")),
+            JsonValue(std::u8string(u8"你好"))
     });
 
     // 转换为大写
@@ -383,7 +383,7 @@ TEST(utf8_invalid_low_surrogate) {
 
 TEST(utf8_valid_4byte_utf8) {
     // 测试直接写入4字节UTF-8字符（不需要转义）
-    JsonValue j(std::u8string(u8"🎉🎊🎋🎌"));
+    JsonValue   j(std::u8string(u8"🎉🎊🎋🎌"));
     std::string serialized = j.serialize();
 
     std::cout << "4字节UTF-8序列化: " << serialized << std::endl;
@@ -397,17 +397,17 @@ TEST(utf8_long_multilingual_string) {
     std::u8string long_str;
     // 添加各种语言的"谢谢"
     long_str += u8"Thank you "; // 英语
-    long_str += u8"谢谢 "; // 中文
-    long_str += u8"ありがとう "; // 日语
-    long_str += u8"감사합니다 "; // 韩语
-    long_str += u8"شكرا "; // 阿拉伯语
-    long_str += u8"ধন্যবাদ "; // 孟加拉语
-    long_str += u8"Спасибо "; // 俄语
-    long_str += u8"Gracias "; // 西班牙语
-    long_str += u8"Merci "; // 法语
-    long_str += u8"Danke"; // 德语
+    long_str += u8"谢谢 ";        // 中文
+    long_str += u8"ありがとう ";     // 日语
+    long_str += u8"감사합니다 ";     // 韩语
+    long_str += u8"شكرا ";      // 阿拉伯语
+    long_str += u8"ধন্যবাদ ";   // 孟加拉语
+    long_str += u8"Спасибо ";   // 俄语
+    long_str += u8"Gracias ";   // 西班牙语
+    long_str += u8"Merci ";     // 法语
+    long_str += u8"Danke";      // 德语
 
-    JsonValue j(long_str);
+    JsonValue   j(long_str);
     std::string serialized = j.serialize();
 
     std::cout << "多语言长字符串长度: " << serialized.length() << std::endl;
@@ -423,13 +423,13 @@ TEST(utf8_long_multilingual_string) {
 TEST(utf8_serialize_with_indent) {
     // 带缩进的UTF-8 JSON序列化
     JsonValue j = object({
-        {
-            "数据", object({
-                {"メッセージ", std::u8string(u8"こんにちは世界")},
-                {"数字", array({1, 2, 3, 4, 5})},
-                {"フラグ", true}
-            })
-        }
+            {
+                    "数据", object({
+                            {"メッセージ", std::u8string(u8"こんにちは世界")},
+                            {"数字", array({1, 2, 3, 4, 5})},
+                            {"フラグ", true}
+                    })
+            }
     });
 
     std::string serialized = j.serialize(2);

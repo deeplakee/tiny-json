@@ -20,26 +20,25 @@
 #ifndef TINY_JSON_JSON_H
 #define TINY_JSON_JSON_H
 
-#include <string>
-#include <utility>
-#include <vector>
-#include <unordered_map>
-#include <variant>
-#include <type_traits>
-#include <ranges>
-#include <memory>
-#include <stdexcept>
-#include <sstream>
-#include <cstdint>
+#include <algorithm>
 #include <cctype>
 #include <cmath>
-#include <limits>
-#include <string_view>
-#include <algorithm>
+#include <cstdint>
 #include <functional>
+#include <limits>
+#include <memory>
+#include <ranges>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace json {
-
     // 前向声明
     class JsonValue;
 
@@ -49,20 +48,20 @@ namespace json {
      * 与 JsonVariant 的索引一一对应，用于类型检查和序列化
      */
     enum class JsonValueType {
-        Null,    ///< null 值
-        Bool,    ///< 布尔值 (true/false)
-        Number,  ///< 数值（内部使用 double）
-        String,  ///< 字符串（内部使用 std::u8string）
-        Array,   ///< 数组（内部使用 std::vector<JsonValue>）
-        Object   ///< 对象（内部使用 std::unordered_map<std::u8string, JsonValue>）
+        Null,   ///< null 值
+        Bool,   ///< 布尔值 (true/false)
+        Number, ///< 数值（内部使用 double）
+        String, ///< 字符串（内部使用 std::u8string）
+        Array,  ///< 数组（内部使用 std::vector<JsonValue>）
+        Object  ///< 对象（内部使用 std::unordered_map<std::u8string, JsonValue>）
     };
 
     // JSON 类型别名
-    using JsonNull = std::nullptr_t;                           ///< JSON null 类型
-    using JsonBool = bool;                                     ///< JSON 布尔类型
-    using JsonNumber = double;                                 ///< JSON 数值类型
-    using JsonString = std::u8string;                          ///< JSON 字符串类型（UTF-8）
-    using JsonArray = std::vector<JsonValue>;                  ///< JSON 数组类型
+    using JsonNull   = std::nullptr_t;                               ///< JSON null 类型
+    using JsonBool   = bool;                                         ///< JSON 布尔类型
+    using JsonNumber = double;                                       ///< JSON 数值类型
+    using JsonString = std::u8string;                                ///< JSON 字符串类型（UTF-8）
+    using JsonArray  = std::vector<JsonValue>;                       ///< JSON 数组类型
     using JsonObject = std::unordered_map<std::u8string, JsonValue>; ///< JSON 对象类型
 
     /**
@@ -133,15 +132,22 @@ namespace json {
      * @param v JSON variant 值
      * @return 类型名称（如 "null"、"bool"、"number" 等）
      */
-    inline std::string jsonTypeName(const JsonVariant &v) {
+    inline std::string json_type_name(const JsonVariant &v) {
         switch (static_cast<JsonValueType>(v.index())) {
-            case JsonValueType::Null: return "null";
-            case JsonValueType::Bool: return "bool";
-            case JsonValueType::Number: return "number";
-            case JsonValueType::String: return "string";
-            case JsonValueType::Array: return "array";
-            case JsonValueType::Object: return "object";
-            default: return "unknown";
+            case JsonValueType::Null:
+                return "null";
+            case JsonValueType::Bool:
+                return "bool";
+            case JsonValueType::Number:
+                return "number";
+            case JsonValueType::String:
+                return "string";
+            case JsonValueType::Array:
+                return "array";
+            case JsonValueType::Object:
+                return "object";
+            default:
+                return "unknown";
         }
     }
 
@@ -175,7 +181,7 @@ namespace json {
                     result += delimiter;
                 }
                 result += func(elem);
-                first = false;
+                first  = false;
             }
 
             return result;
@@ -190,7 +196,7 @@ namespace json {
          * @param value 要检查的 double 值
          * @return 如果可以安全转换为 int 返回 true
          */
-        inline bool isSafeToConvertToInt(double value) {
+        inline bool is_safe_to_convert_to_int(double value) {
             if (std::isnan(value) || std::isinf(value)) {
                 return false;
             }
@@ -255,10 +261,14 @@ namespace json {
             size_t count = 0;
             for (size_t i = 0; i < str.size();) {
                 const char8_t c = str[i];
-                if ((c & 0xF8) == 0xF0) i += 4;      // 4字节字符
-                else if ((c & 0xF0) == 0xE0) i += 3;  // 3字节字符
-                else if ((c & 0xE0) == 0xC0) i += 2;  // 2字节字符
-                else i += 1;                            // 1字节字符或无效字节
+                if ((c & 0xF8) == 0xF0)
+                    i += 4; // 4字节字符
+                else if ((c & 0xF0) == 0xE0)
+                    i += 3; // 3字节字符
+                else if ((c & 0xE0) == 0xC0)
+                    i += 2; // 2字节字符
+                else
+                    i += 1; // 1字节字符或无效字节
                 count++;
             }
             return count;
@@ -277,9 +287,7 @@ namespace json {
             }
 
             /// const char* -> std::u8string
-            inline std::u8string to_u8string_impl(const char *s) {
-                return {reinterpret_cast<const char8_t *>(s)};
-            }
+            inline std::u8string to_u8string_impl(const char *s) { return {reinterpret_cast<const char8_t *>(s)}; }
 
             /// std::string&& -> std::u8string（移动语义）
             inline std::u8string to_u8string_impl(std::string &&s) {
@@ -298,9 +306,7 @@ namespace json {
             }
 
             /// const char8_t* -> std::string
-            inline std::string to_std_string_impl(const char8_t *s) {
-                return {reinterpret_cast<const char *>(s)};
-            }
+            inline std::string to_std_string_impl(const char8_t *s) { return {reinterpret_cast<const char *>(s)}; }
 
             /// std::u8string&& -> std::string（移动语义）
             inline std::string to_std_string_impl(std::u8string &&s) {
@@ -312,7 +318,7 @@ namespace json {
             std::string to_std_string_impl(T &&s) {
                 return std::string(std::forward<T>(s));
             }
-        }
+        } // namespace string_cov_detail
 
         /**
          * @brief 将任意字符串类型转换为 std::u8string
@@ -336,20 +342,14 @@ namespace json {
         }
 
         /// 判断字符是否为空白字符（空格、制表符、换行符、回车符）
-        inline bool isspace(char8_t c) {
-            return c == u8' ' || c == u8'\t' || c == u8'\n' || c == u8'\r';
-        }
+        inline bool isspace(char8_t c) { return c == u8' ' || c == u8'\t' || c == u8'\n' || c == u8'\r'; }
 
         /// 判断字符是否为数字（0-9）
-        inline bool isdigit(char8_t c) {
-            return c >= u8'0' && c <= u8'9';
-        }
+        inline bool isdigit(char8_t c) { return c >= u8'0' && c <= u8'9'; }
 
         /// 判断字符是否为十六进制数字（0-9、a-f、A-F）
         inline bool isxdigit(char8_t c) {
-            return isdigit(c) ||
-                   (c >= u8'a' && c <= u8'f') ||
-                   (c >= u8'A' && c <= u8'F');
+            return isdigit(c) || (c >= u8'a' && c <= u8'f') || (c >= u8'A' && c <= u8'F');
         }
 
         /**
@@ -373,44 +373,51 @@ namespace json {
                 return 1; // ASCII
             }
 
-            size_t len = 0;
+            size_t   len       = 0;
             uint32_t codepoint = 0;
 
             if ((c & 0xE0) == 0xC0) {
-                len = 2;
+                len       = 2;
                 codepoint = c & 0x1F;
             } else if ((c & 0xF0) == 0xE0) {
-                len = 3;
+                len       = 3;
                 codepoint = c & 0x0F;
             } else if ((c & 0xF8) == 0xF0) {
-                len = 4;
+                len       = 4;
                 codepoint = c & 0x07;
             } else {
                 return 0; // 非法的起始字节
             }
 
-            if (remaining < len) return 0; // 不够长
+            if (remaining < len)
+                return 0; // 不够长
 
             for (size_t i = 1; i < len; ++i) {
                 const auto b = static_cast<uint8_t>(data[i]);
-                if ((b & 0xC0) != 0x80) return 0; // 非法的后续字节
+                if ((b & 0xC0) != 0x80)
+                    return 0; // 非法的后续字节
                 codepoint = (codepoint << 6) | (b & 0x3F);
             }
 
             // 检查过长编码
-            if (len == 2 && codepoint < 0x80) return 0;
-            if (len == 3 && codepoint < 0x800) return 0;
-            if (len == 4 && codepoint < 0x10000) return 0;
+            if (len == 2 && codepoint < 0x80)
+                return 0;
+            if (len == 3 && codepoint < 0x800)
+                return 0;
+            if (len == 4 && codepoint < 0x10000)
+                return 0;
 
             // 检查代理对
-            if (codepoint >= 0xD800 && codepoint <= 0xDFFF) return 0;
+            if (codepoint >= 0xD800 && codepoint <= 0xDFFF)
+                return 0;
 
             // 检查超出 Unicode 范围
-            if (codepoint > 0x10FFFF) return 0;
+            if (codepoint > 0x10FFFF)
+                return 0;
 
             return len;
         }
-    }
+    } // namespace util
 
     /**
      * @brief JSON 值类 — 核心 API
@@ -428,68 +435,83 @@ namespace json {
     class JsonValue {
     public:
         /// 数组最大元素数限制，防止无限扩容
-        static constexpr size_t max_array_size = 1000000;
+        static constexpr size_t kMaxArraySize = 1000000;
 
         // ========== 构造函数 ==========
 
         /// 默认构造：null 值
-        JsonValue() : _value{nullptr} {
+        JsonValue() :
+            value_{nullptr} {
         }
 
         /// 从 null 构造
-        JsonValue(JsonNull) : _value{nullptr} {
+        JsonValue(JsonNull) :
+            value_{nullptr} {
         }
 
         /// 从 bool 构造
-        JsonValue(JsonBool b) : _value{b} {
+        JsonValue(JsonBool b) :
+            value_{b} {
         }
 
         /// 从 double 构造
-        JsonValue(JsonNumber n) : _value{n} {
+        JsonValue(JsonNumber n) :
+            value_{n} {
         }
 
         /// 从 int 构造（自动转换为 double）
-        JsonValue(const int n) : _value{static_cast<JsonNumber>(n)} {
+        JsonValue(const int n) :
+            value_{static_cast<JsonNumber>(n)} {
         }
 
         /// 从 C 字符串构造（自动转换为 u8string）
-        JsonValue(const char *s) : _value{util::to_u8string(s)} {
+        JsonValue(const char *s) :
+            value_{util::to_u8string(s)} {
         }
 
         /// 从 char8_t 字符串构造
-        JsonValue(const char8_t *s) : _value{s} {
+        JsonValue(const char8_t *s) :
+            value_{s} {
         }
 
         /// 从 std::string 构造（自动转换为 u8string）
-        JsonValue(const std::string &s) : _value{util::to_u8string(s)} {
+        JsonValue(const std::string &s) :
+            value_{util::to_u8string(s)} {
         }
 
         /// 从 std::string 移动构造
-        JsonValue(std::string &&s) : _value{util::to_u8string(s)} {
+        JsonValue(std::string &&s) :
+            value_{util::to_u8string(s)} {
         }
 
         /// 从 u8string 拷贝构造
-        JsonValue(const JsonString &s) : _value{s} {
+        JsonValue(const JsonString &s) :
+            value_{s} {
         }
 
         /// 从 u8string 移动构造
-        JsonValue(JsonString &&s) noexcept : _value{std::move(s)} {
+        JsonValue(JsonString &&s) noexcept :
+            value_{std::move(s)} {
         }
 
         /// 从数组拷贝构造
-        JsonValue(const JsonArray &arr) : _value{arr} {
+        JsonValue(const JsonArray &arr) :
+            value_{arr} {
         }
 
         /// 从数组移动构造
-        JsonValue(JsonArray &&arr) noexcept : _value{std::move(arr)} {
+        JsonValue(JsonArray &&arr) noexcept :
+            value_{std::move(arr)} {
         }
 
         /// 从对象拷贝构造
-        JsonValue(const JsonObject &obj) : _value{obj} {
+        JsonValue(const JsonObject &obj) :
+            value_{obj} {
         }
 
         /// 从对象移动构造
-        JsonValue(JsonObject &&obj) noexcept : _value{std::move(obj)} {
+        JsonValue(JsonObject &&obj) noexcept :
+            value_{std::move(obj)} {
         }
 
         // ========== 类型检查 ==========
@@ -498,17 +520,13 @@ namespace json {
          * @brief 获取当前值的类型
          * @return JsonValueType 枚举值
          */
-        JsonValueType type() const {
-            return static_cast<JsonValueType>(_value.index());
-        }
+        JsonValueType type() const { return static_cast<JsonValueType>(value_.index()); }
 
         /**
          * @brief 获取当前值的类型名称
          * @return 类型名称字符串（如 "null"、"bool" 等）
          */
-        std::string typeName() const {
-            return jsonTypeName(_value);
-        }
+        std::string type_name() const { return json_type_name(value_); }
 
         /**
          * @brief 检查当前值是否为指定类型
@@ -517,7 +535,7 @@ namespace json {
          */
         template<JsonTy T>
         constexpr bool is() const {
-            return std::holds_alternative<T>(_value);
+            return std::holds_alternative<T>(value_);
         }
 
         /**
@@ -533,10 +551,11 @@ namespace json {
                 oss << "JsonValue type mismatch: requested '"
                         << typeid(T).name()
                         << "' but actual type is '"
-                        << typeName() << "'";
+                        << type_name()
+                        << "'";
                 throw std::runtime_error(oss.str());
             }
-            return std::get<T>(_value);
+            return std::get<T>(value_);
         }
 
         /// @brief as() 的 const 版本
@@ -547,10 +566,11 @@ namespace json {
                 oss << "JsonValue type mismatch: requested '"
                         << typeid(T).name()
                         << "' but actual type is '"
-                        << typeName() << "'";
+                        << type_name()
+                        << "'";
                 throw std::runtime_error(oss.str());
             }
-            return std::get<T>(_value);
+            return std::get<T>(value_);
         }
 
         /**
@@ -562,7 +582,7 @@ namespace json {
             if (!is<JsonString>()) {
                 throw std::runtime_error("JsonValue type mismatch: not a string");
             }
-            return util::to_std_string(std::get<JsonString>(_value));
+            return util::to_std_string(std::get<JsonString>(value_));
         }
 
         /**
@@ -576,9 +596,12 @@ namespace json {
          * @throw std::runtime_error 类型不支持 size() 时
          */
         size_t size() const {
-            if (is<JsonString>()) return util::utf8_char_count(std::get<JsonString>(_value));
-            if (is<JsonArray>()) return std::get<JsonArray>(_value).size();
-            if (is<JsonObject>()) return std::get<JsonObject>(_value).size();
+            if (is<JsonString>())
+                return util::utf8_char_count(std::get<JsonString>(value_));
+            if (is<JsonArray>())
+                return std::get<JsonArray>(value_).size();
+            if (is<JsonObject>())
+                return std::get<JsonObject>(value_).size();
             throw std::runtime_error("JsonValue type mismatch: Type does not support size()");
         }
 
@@ -592,8 +615,9 @@ namespace json {
          * @throw std::out_of_range 索引越界时
          */
         JsonValue &at(const size_t index) {
-            if (!is<JsonArray>()) throw std::runtime_error("Not a JsonArray value");
-            auto &arr = std::get<JsonArray>(_value);
+            if (!is<JsonArray>())
+                throw std::runtime_error("Not a JsonArray value");
+            auto &arr = std::get<JsonArray>(value_);
             if (index >= arr.size()) {
                 throw std::out_of_range("JsonArray index out of range");
             }
@@ -602,8 +626,9 @@ namespace json {
 
         /// @brief at() 的 const 版本
         const JsonValue &at(const size_t index) const {
-            if (!is<JsonArray>()) throw std::runtime_error("Not a JsonArray value");
-            auto &arr = std::get<JsonArray>(_value);
+            if (!is<JsonArray>())
+                throw std::runtime_error("Not a JsonArray value");
+            auto &arr = std::get<JsonArray>(value_);
             if (index >= arr.size()) {
                 throw std::out_of_range("JsonArray index out of range");
             }
@@ -614,26 +639,26 @@ namespace json {
          * @brief 数组下标操作符（自动扩容）
          *
          * null 值会自动转换为数组
-         * 超出当前大小时自动扩容（受 max_array_size 限制）
+         * 超出当前大小时自动扩容（受 kMaxArraySize 限制）
          *
          * @tparam T 整数类型
          * @param index 数组索引
          * @return 对应位置的 JsonValue 引用
          * @throw std::runtime_error 当前值不是数组/null 时
-         * @throw std::out_of_range 索引超过 max_array_size 时
+         * @throw std::out_of_range 索引超过 kMaxArraySize 时
          */
         template<IntegerLike T>
         JsonValue &operator[](const T index) {
             if (is<JsonNull>()) {
-                _value = JsonArray();
+                value_ = JsonArray();
             } else if (!is<JsonArray>()) {
                 throw std::runtime_error("Not a JsonArray value");
             }
 
-            auto &arr = std::get<JsonArray>(_value);
+            auto &     arr = std::get<JsonArray>(value_);
             const auto idx = static_cast<size_t>(index);
             if (idx >= arr.size()) {
-                if (idx >= max_array_size) {
+                if (idx >= kMaxArraySize) {
                     throw std::out_of_range("JsonArray index exceeds maximum allowed size");
                 }
                 arr.resize(idx + 1, JsonValue(nullptr));
@@ -654,12 +679,12 @@ namespace json {
             requires std::same_as<std::decay_t<T>, JsonValue>
         void push_back(T &&value) {
             if (is<JsonNull>()) {
-                _value = JsonArray();
+                value_ = JsonArray();
             } else if (!is<JsonArray>()) {
                 throw std::runtime_error("Cannot push_back to non-JsonArray value");
             }
 
-            std::get<JsonArray>(_value).push_back(std::forward<T>(value));
+            std::get<JsonArray>(value_).push_back(std::forward<T>(value));
         }
 
         /**
@@ -674,12 +699,12 @@ namespace json {
         template<typename... Args>
         void emplace_back(Args &&... args) {
             if (is<JsonNull>()) {
-                _value = JsonArray();
+                value_ = JsonArray();
             } else if (!is<JsonArray>()) {
                 throw std::runtime_error("Cannot emplace_back to non-JsonArray value");
             }
 
-            std::get<JsonArray>(_value).emplace_back(std::forward<Args>(args)...);
+            std::get<JsonArray>(value_).emplace_back(std::forward<Args>(args)...);
         }
 
         // ========== 对象操作 ==========
@@ -698,12 +723,12 @@ namespace json {
         template<StringLike T>
         void insert(T &&key, const JsonValue &value) {
             if (is<JsonNull>()) {
-                _value = JsonObject();
+                value_ = JsonObject();
             } else if (!is<JsonObject>()) {
                 throw std::runtime_error("Cannot insert to non-JsonObject value");
             }
-            auto u8key = util::to_u8string(std::forward<T>(key));
-            std::get<JsonObject>(_value)[std::move(u8key)] = value;
+            auto u8key                                     = util::to_u8string(std::forward<T>(key));
+            std::get<JsonObject>(value_)[std::move(u8key)] = value;
         }
 
         /**
@@ -716,20 +741,24 @@ namespace json {
          */
         template<StringLike T>
         JsonValue &at(T &&key) {
-            if (!is<JsonObject>()) throw std::runtime_error("Not a JsonObject value");
-            auto u8key = util::to_u8string(std::forward<T>(key));
-            auto &obj = std::get<JsonObject>(_value);
-            if (!obj.contains(u8key)) throw std::out_of_range("JsonObject key not found");
+            if (!is<JsonObject>())
+                throw std::runtime_error("Not a JsonObject value");
+            auto  u8key = util::to_u8string(std::forward<T>(key));
+            auto &obj   = std::get<JsonObject>(value_);
+            if (!obj.contains(u8key))
+                throw std::out_of_range("JsonObject key not found");
             return obj[u8key];
         }
 
         /// @brief at() 的 const 版本
         template<StringLike T>
         const JsonValue &at(T &&key) const {
-            if (!is<JsonObject>()) throw std::runtime_error("Not a JsonObject value");
-            auto u8key = util::to_u8string(std::forward<T>(key));
-            auto &obj = std::get<JsonObject>(_value);
-            if (!obj.contains(u8key)) throw std::out_of_range("JsonObject key not found");
+            if (!is<JsonObject>())
+                throw std::runtime_error("Not a JsonObject value");
+            auto  u8key = util::to_u8string(std::forward<T>(key));
+            auto &obj   = std::get<JsonObject>(value_);
+            if (!obj.contains(u8key))
+                throw std::out_of_range("JsonObject key not found");
             return obj.at(u8key);
         }
 
@@ -747,12 +776,12 @@ namespace json {
         template<StringLike T>
         JsonValue &operator[](T &&key) {
             if (is<JsonNull>()) {
-                _value = JsonObject();
+                value_ = JsonObject();
             } else if (!is<JsonObject>()) {
                 throw std::runtime_error("Not a JsonObject value");
             }
             auto u8key = util::to_u8string(std::forward<T>(key));
-            return std::get<JsonObject>(_value)[std::move(u8key)];
+            return std::get<JsonObject>(value_)[std::move(u8key)];
         }
 
         /**
@@ -764,9 +793,10 @@ namespace json {
          */
         template<StringLike T>
         bool contains(T &&key) const {
-            if (!is<JsonObject>()) throw std::runtime_error("Not a JsonObject value");
+            if (!is<JsonObject>())
+                throw std::runtime_error("Not a JsonObject value");
             auto u8key = util::to_u8string(std::forward<T>(key));
-            return std::get<JsonObject>(_value).contains(u8key);
+            return std::get<JsonObject>(value_).contains(u8key);
         }
 
         // ========== JSON Pointer (RFC 6901) ==========
@@ -813,19 +843,19 @@ namespace json {
          */
         void merge(const JsonValue &patch) {
             if (!patch.is<JsonObject>()) {
-                _value = patch._value;
+                value_ = patch.value_;
                 return;
             }
 
             // 当前值不是 object 时，先转为空 object
             if (!is<JsonObject>()) {
-                _value = JsonObject();
+                value_ = JsonObject();
             }
 
-            auto &target = std::get<JsonObject>(_value);
-            const auto &patch_obj = std::get<JsonObject>(patch._value);
+            auto &      target    = std::get<JsonObject>(value_);
+            const auto &patch_obj = std::get<JsonObject>(patch.value_);
 
-            for (const auto &[key, value] : patch_obj) {
+            for (const auto &[key, value]: patch_obj) {
                 if (value.is<JsonNull>()) {
                     // null 值表示删除该键
                     target.erase(key);
@@ -854,23 +884,24 @@ namespace json {
                     case JsonValueType::Null:
                         return "null";
                     case JsonValueType::Bool:
-                        return std::get<JsonBool>(_value) ? "true" : "false";
+                        return std::get<JsonBool>(value_) ? "true" : "false";
                     case JsonValueType::Number: {
-                        const auto num = std::get<JsonNumber>(_value);
+                        const auto num = std::get<JsonNumber>(value_);
                         // 整数省略小数点
-                        if (util::isSafeToConvertToInt(num)) return std::to_string(static_cast<int>(num));
+                        if (util::is_safe_to_convert_to_int(num))
+                            return std::to_string(static_cast<int>(num));
                         return serialize_number(num);
                     }
                     case JsonValueType::String:
-                        return serialize_string(std::get<JsonString>(_value));
+                        return serialize_string(std::get<JsonString>(value_));
                     case JsonValueType::Array: {
-                        const auto &arr = std::get<JsonArray>(_value);
-                        const auto result = util::join(arr, ",", [](const JsonValue &v) { return v.serialize(); });
+                        const auto &arr    = std::get<JsonArray>(value_);
+                        const auto  result = util::join(arr, ",", [](const JsonValue &v) { return v.serialize(); });
                         return "[" + result + "]";
                     }
                     case JsonValueType::Object: {
-                        const auto &obj = std::get<JsonObject>(_value);
-                        const auto result = util::join(obj, ",", [](const auto &kv) {
+                        const auto &obj    = std::get<JsonObject>(value_);
+                        const auto  result = util::join(obj, ",", [](const auto &kv) {
                             const auto &[key, value] = kv;
                             return serialize_string(key) + ":" + value.serialize();
                         });
@@ -892,8 +923,9 @@ namespace json {
          */
         template<typename Func>
         void for_each_array(Func &&func) {
-            if (!is<JsonArray>()) throw std::runtime_error("Not a JsonArray value");
-            for (auto &arr = std::get<JsonArray>(_value); auto &elem: arr) {
+            if (!is<JsonArray>())
+                throw std::runtime_error("Not a JsonArray value");
+            for (auto &arr = std::get<JsonArray>(value_); auto &elem: arr) {
                 func(elem);
             }
         }
@@ -901,8 +933,9 @@ namespace json {
         /// @brief for_each_array() 的 const 版本
         template<typename Func>
         void for_each_array(Func &&func) const {
-            if (!is<JsonArray>()) throw std::runtime_error("Not a JsonArray value");
-            for (const auto &arr = std::get<JsonArray>(_value); const auto &elem: arr) {
+            if (!is<JsonArray>())
+                throw std::runtime_error("Not a JsonArray value");
+            for (const auto &arr = std::get<JsonArray>(value_); const auto &elem: arr) {
                 func(elem);
             }
         }
@@ -915,8 +948,9 @@ namespace json {
          */
         template<typename Func>
         void for_each_object(Func &&func) {
-            if (!is<JsonObject>()) throw std::runtime_error("Not a JsonObject value");
-            for (auto &obj = std::get<JsonObject>(_value); auto &[key, value]: obj) {
+            if (!is<JsonObject>())
+                throw std::runtime_error("Not a JsonObject value");
+            for (auto &obj = std::get<JsonObject>(value_); auto &[key, value]: obj) {
                 func(key, value);
             }
         }
@@ -924,8 +958,9 @@ namespace json {
         /// @brief for_each_object() 的 const 版本
         template<typename Func>
         void for_each_object(Func &&func) const {
-            if (!is<JsonObject>()) throw std::runtime_error("Not a JsonObject value");
-            for (const auto &obj = std::get<JsonObject>(_value); const auto &[key, value]: obj) {
+            if (!is<JsonObject>())
+                throw std::runtime_error("Not a JsonObject value");
+            for (const auto &obj = std::get<JsonObject>(value_); const auto &[key, value]: obj) {
                 func(key, value);
             }
         }
@@ -941,14 +976,16 @@ namespace json {
          * @throw std::runtime_error 当前值不是数组时
          */
         JsonArray &as_array() {
-            if (!is<JsonArray>()) throw std::runtime_error("Not a JsonArray value");
-            return std::get<JsonArray>(_value);
+            if (!is<JsonArray>())
+                throw std::runtime_error("Not a JsonArray value");
+            return std::get<JsonArray>(value_);
         }
 
         /// @brief as_array() 的 const 版本
         const JsonArray &as_array() const {
-            if (!is<JsonArray>()) throw std::runtime_error("Not a JsonArray value");
-            return std::get<JsonArray>(_value);
+            if (!is<JsonArray>())
+                throw std::runtime_error("Not a JsonArray value");
+            return std::get<JsonArray>(value_);
         }
 
         /**
@@ -960,19 +997,21 @@ namespace json {
          * @throw std::runtime_error 当前值不是对象时
          */
         JsonObject &as_object() {
-            if (!is<JsonObject>()) throw std::runtime_error("Not a JsonObject value");
-            return std::get<JsonObject>(_value);
+            if (!is<JsonObject>())
+                throw std::runtime_error("Not a JsonObject value");
+            return std::get<JsonObject>(value_);
         }
 
         /// @brief as_object() 的 const 版本
         const JsonObject &as_object() const {
-            if (!is<JsonObject>()) throw std::runtime_error("Not a JsonObject value");
-            return std::get<JsonObject>(_value);
+            if (!is<JsonObject>())
+                throw std::runtime_error("Not a JsonObject value");
+            return std::get<JsonObject>(value_);
         }
 
     private:
         /// 底层存储：使用 variant 存储六种 JSON 类型
-        JsonVariant _value;
+        JsonVariant value_;
 
         // ========== 私有辅助方法 ==========
 
@@ -995,10 +1034,11 @@ namespace json {
             snprintf(buf, sizeof(buf), "%.15g", num);
             // 如果结果包含小数点但没有指数符号，去除尾随零
             std::string result(buf);
-            auto dot_pos = result.find('.');
+            auto        dot_pos = result.find('.');
             if (dot_pos != std::string::npos) {
                 auto e_pos = result.find('e');
-                if (e_pos == std::string::npos) e_pos = result.find('E');
+                if (e_pos == std::string::npos)
+                    e_pos = result.find('E');
                 if (e_pos == std::string::npos) {
                     // 去除小数部分的尾随零
                     size_t last_nonzero = result.find_last_not_of('0');
@@ -1037,30 +1077,28 @@ namespace json {
 
         // 判断字符串是否为非负整数（用于数组索引判断）
         static bool is_array_index(const std::u8string &token) {
-            if (token.empty()) return false;
-            for (auto c : token) {
-                if (!util::isdigit(c)) return false;
-            }
-            return true;
+            return !token.empty() && std::ranges::all_of(token, util::isdigit);
         }
 
         JsonValue &resolve_impl(const std::u8string &pointer) {
-            if (pointer.empty()) return *this;
+            if (pointer.empty())
+                return *this;
             if (pointer[0] != u8'/') {
                 throw std::runtime_error("JSON Pointer must start with '/' or be empty");
             }
 
             // 按 '/' 分割并逐级解析
             JsonValue *current = this;
-            size_t pos = 1;
+            size_t     pos     = 1;
             while (pos <= pointer.size()) {
                 size_t next = pointer.find(u8'/', pos);
-                if (next == std::u8string::npos) next = pointer.size();
+                if (next == std::u8string::npos)
+                    next = pointer.size();
 
                 std::u8string token = unescape_pointer_token(pointer.substr(pos, next - pos));
 
                 if (current->is<JsonObject>()) {
-                    auto &obj = std::get<JsonObject>(current->_value);
+                    auto &obj = std::get<JsonObject>(current->value_);
                     if (!obj.contains(token)) {
                         throw std::out_of_range("JSON Pointer: key not found");
                     }
@@ -1070,10 +1108,10 @@ namespace json {
                         throw std::out_of_range("JSON Pointer: invalid array index");
                     }
                     size_t idx = 0;
-                    for (auto c : token) {
+                    for (auto c: token) {
                         idx = idx * 10 + (c - u8'0');
                     }
-                    auto &arr = std::get<JsonArray>(current->_value);
+                    auto &arr = std::get<JsonArray>(current->value_);
                     if (idx >= arr.size()) {
                         throw std::out_of_range("JSON Pointer: array index out of range");
                     }
@@ -1088,21 +1126,23 @@ namespace json {
         }
 
         const JsonValue &resolve_impl(const std::u8string &pointer) const {
-            if (pointer.empty()) return *this;
+            if (pointer.empty())
+                return *this;
             if (pointer[0] != u8'/') {
                 throw std::runtime_error("JSON Pointer must start with '/' or be empty");
             }
 
             const JsonValue *current = this;
-            size_t pos = 1;
+            size_t           pos     = 1;
             while (pos <= pointer.size()) {
                 size_t next = pointer.find(u8'/', pos);
-                if (next == std::u8string::npos) next = pointer.size();
+                if (next == std::u8string::npos)
+                    next = pointer.size();
 
                 std::u8string token = unescape_pointer_token(pointer.substr(pos, next - pos));
 
                 if (current->is<JsonObject>()) {
-                    const auto &obj = std::get<JsonObject>(current->_value);
+                    const auto &obj = std::get<JsonObject>(current->value_);
                     if (!obj.contains(token)) {
                         throw std::out_of_range("JSON Pointer: key not found");
                     }
@@ -1112,10 +1152,10 @@ namespace json {
                         throw std::out_of_range("JSON Pointer: invalid array index");
                     }
                     size_t idx = 0;
-                    for (auto c : token) {
+                    for (auto c: token) {
                         idx = idx * 10 + (c - u8'0');
                     }
-                    const auto &arr = std::get<JsonArray>(current->_value);
+                    const auto &arr = std::get<JsonArray>(current->value_);
                     if (idx >= arr.size()) {
                         throw std::out_of_range("JSON Pointer: array index out of range");
                     }
@@ -1147,27 +1187,34 @@ namespace json {
 
             for (char8_t c8: str) {
                 switch (auto c = static_cast<unsigned char>(c8)) {
-                    case '"': result += "\\\"";
+                    case '"':
+                        result += "\\\"";
                         break;
-                    case '\\': result += "\\\\";
+                    case '\\':
+                        result += "\\\\";
                         break;
-                    case '\b': result += "\\b";
+                    case '\b':
+                        result += "\\b";
                         break;
-                    case '\f': result += "\\f";
+                    case '\f':
+                        result += "\\f";
                         break;
-                    case '\n': result += "\\n";
+                    case '\n':
+                        result += "\\n";
                         break;
-                    case '\r': result += "\\r";
+                    case '\r':
+                        result += "\\r";
                         break;
-                    case '\t': result += "\\t";
+                    case '\t':
+                        result += "\\t";
                         break;
                     default:
                         if (c < 0x20) {
                             // 控制字符使用 \u00XX 格式
                             constexpr char hex[] = "0123456789abcdef";
-                            result += "\\u00";
-                            result += hex[c >> 4];
-                            result += hex[c & 0xF];
+                            result               += "\\u00";
+                            result               += hex[c >> 4];
+                            result               += hex[c & 0xF];
                         } else {
                             result += static_cast<char>(c);
                         }
@@ -1193,17 +1240,19 @@ namespace json {
                 case JsonValueType::Null:
                     return "null";
                 case JsonValueType::Bool:
-                    return std::get<JsonBool>(_value) ? "true" : "false";
+                    return std::get<JsonBool>(value_) ? "true" : "false";
                 case JsonValueType::Number: {
-                    const auto num = std::get<JsonNumber>(_value);
-                    if (util::isSafeToConvertToInt(num)) return std::to_string(static_cast<int>(num));
+                    const auto num = std::get<JsonNumber>(value_);
+                    if (util::is_safe_to_convert_to_int(num))
+                        return std::to_string(static_cast<int>(num));
                     return serialize_number(num);
                 }
                 case JsonValueType::String:
-                    return serialize_string(std::get<JsonString>(_value));
+                    return serialize_string(std::get<JsonString>(value_));
                 case JsonValueType::Array: {
-                    const auto &arr = std::get<JsonArray>(_value);
-                    if (arr.empty()) return "[]";
+                    const auto &arr = std::get<JsonArray>(value_);
+                    if (arr.empty())
+                        return "[]";
                     std::string result = util::join(arr, ",\n", [&](const JsonValue &elem) {
                         return next_indent_str + elem.serialize_with_indent(indent, current_indent + indent);
                     });
@@ -1211,8 +1260,9 @@ namespace json {
                     return result;
                 }
                 case JsonValueType::Object: {
-                    const auto &obj = std::get<JsonObject>(_value);
-                    if (obj.empty()) return "{}";
+                    const auto &obj = std::get<JsonObject>(value_);
+                    if (obj.empty())
+                        return "{}";
                     std::string result = util::join(obj, ",\n", [&](const auto &kv) {
                         const auto &[key, value] = kv;
                         return next_indent_str + serialize_string(key) + ": " +
@@ -1237,9 +1287,7 @@ namespace json {
      * @param elements 初始化列表
      * @return 包含数组的 JsonValue
      */
-    inline JsonValue array(const std::initializer_list<JsonValue> elements) {
-        return {JsonArray(elements)};
-    }
+    inline JsonValue array(const std::initializer_list<JsonValue> elements) { return {JsonArray(elements)}; }
 
     /**
      * @brief 创建 JSON 对象
@@ -1272,7 +1320,7 @@ namespace json {
     class JsonParser {
     public:
         /// 默认最大嵌套深度
-        static constexpr size_t default_max_depth = 256;
+        static constexpr size_t kDefaultMaxDepth = 256;
 
         /**
          * @brief 解析 JSON 字符串
@@ -1281,53 +1329,53 @@ namespace json {
          * @return 解析后的 JsonValue
          * @throw std::runtime_error 解析错误时
          */
-        static JsonValue parse(const std::u8string &json_str, size_t max_depth = default_max_depth) {
+        static JsonValue parse(const std::u8string &json_str, size_t max_depth = kDefaultMaxDepth) {
             JsonParser parser(json_str, max_depth);
-            JsonValue result = parser.parse_value();
+            JsonValue  result = parser.parse_value();
             parser.skip_whitespace();
-            if (parser._pos < parser._str.size()) {
+            if (parser.pos_ < parser.str_.size()) {
                 throw std::runtime_error("JSON String Parsing Error: Unexpected characters after JSON value");
             }
             return result;
         }
 
         /// @brief parse() 的 std::string 重载
-        static JsonValue parse(const std::string &json_str, size_t max_depth = default_max_depth) {
+        static JsonValue parse(const std::string &json_str, size_t max_depth = kDefaultMaxDepth) {
             return parse(util::to_u8string(json_str), max_depth);
         }
 
     private:
-        std::u8string _str;   ///< 输入字符串
-        size_t _pos;          ///< 当前解析位置
-        size_t _max_depth;    ///< 最大嵌套深度
-        size_t _depth;        ///< 当前嵌套深度
+        std::u8string str_;       ///< 输入字符串
+        size_t        pos_;       ///< 当前解析位置
+        size_t        max_depth_; ///< 最大嵌套深度
+        size_t        depth_;     ///< 当前嵌套深度
 
         /// 构造函数
-        explicit JsonParser(std::u8string json_str, size_t max_depth)
-            : _str(std::move(json_str)), _pos(0), _max_depth(max_depth), _depth(0) {
+        explicit JsonParser(std::u8string json_str, size_t max_depth) :
+            str_(std::move(json_str)), pos_(0), max_depth_(max_depth), depth_(0) {
         }
 
         /// 跳过空白字符
         void skip_whitespace() {
-            while (_pos < _str.size() && util::isspace(_str[_pos])) {
-                _pos++;
+            while (pos_ < str_.size() && util::isspace(str_[pos_])) {
+                pos_++;
             }
         }
 
         /// 查看当前字符（不移动位置）
         [[nodiscard]] char8_t peek() const {
-            if (_pos >= _str.size()) {
+            if (pos_ >= str_.size()) {
                 throw std::runtime_error("JSON String Parsing Error: Unexpected end of JSON String");
             }
-            return _str[_pos];
+            return str_[pos_];
         }
 
         /// 读取当前字符并移动位置
         char8_t next() {
-            if (_pos >= _str.size()) {
+            if (pos_ >= str_.size()) {
                 throw std::runtime_error("JSON String Parsing Error: Unexpected end of JSON String");
             }
-            return _str[_pos++];
+            return str_[pos_++];
         }
 
         /**
@@ -1338,23 +1386,28 @@ namespace json {
          */
         JsonValue parse_value() {
             skip_whitespace();
-            if (_pos >= _str.size()) {
+            if (pos_ >= str_.size()) {
                 throw std::runtime_error("JSON String Parsing Error: Unexpected end of JSON String");
             }
 
             const char8_t c = peek();
             // 深度检查：遇到数组或对象时检查是否超过最大深度
-            if ((c == u8'[' || c == u8'{') && _depth >= _max_depth) {
+            if ((c == u8'[' || c == u8'{') && depth_ >= max_depth_) {
                 throw std::runtime_error("JSON String Parsing Error: Maximum nesting depth exceeded");
             }
 
             switch (c) {
-                case u8'n': return parse_null();
+                case u8'n':
+                    return parse_null();
                 case u8't':
-                case u8'f': return parse_bool();
-                case u8'"': return parse_string();
-                case u8'[': return parse_array();
-                case u8'{': return parse_object();
+                case u8'f':
+                    return parse_bool();
+                case u8'"':
+                    return parse_string();
+                case u8'[':
+                    return parse_array();
+                case u8'{':
+                    return parse_object();
                 default:
                     if (c == u8'-' || util::isdigit(c)) {
                         return parse_number();
@@ -1366,8 +1419,8 @@ namespace json {
 
         /// 解析 null 值
         JsonValue parse_null() {
-            if (_str.substr(_pos, 4) == u8"null") {
-                _pos += 4;
+            if (str_.substr(pos_, 4) == u8"null") {
+                pos_ += 4;
                 return JsonValue{nullptr};
             }
             throw std::runtime_error("JSON String Parsing Error: Invalid null value");
@@ -1375,12 +1428,12 @@ namespace json {
 
         /// 解析布尔值（true/false）
         JsonValue parse_bool() {
-            if (_str.substr(_pos, 4) == u8"true") {
-                _pos += 4;
+            if (str_.substr(pos_, 4) == u8"true") {
+                pos_ += 4;
                 return JsonValue{true};
             }
-            if (_str.substr(_pos, 5) == u8"false") {
-                _pos += 5;
+            if (str_.substr(pos_, 5) == u8"false") {
+                pos_ += 5;
                 return JsonValue{false};
             }
             throw std::runtime_error("JSON String Parsing Error: Invalid boolean value");
@@ -1392,7 +1445,7 @@ namespace json {
          * 支持格式：整数、小数、科学计数法（e/E）
          */
         JsonValue parse_number() {
-            const size_t start = _pos;
+            const size_t start = pos_;
 
             // 符号
             if (peek() == u8'-') {
@@ -1403,7 +1456,7 @@ namespace json {
             if (peek() == u8'0') {
                 next();
             } else if (util::isdigit(peek())) {
-                while (_pos < _str.size() && util::isdigit(_str[_pos])) {
+                while (pos_ < str_.size() && util::isdigit(str_[pos_])) {
                     next();
                 }
             } else {
@@ -1411,35 +1464,35 @@ namespace json {
             }
 
             // 小数部分
-            if (_pos < _str.size() && peek() == u8'.') {
+            if (pos_ < str_.size() && peek() == u8'.') {
                 next();
-                if (_pos >= _str.size() || !util::isdigit(peek())) {
+                if (pos_ >= str_.size() || !util::isdigit(peek())) {
                     throw std::runtime_error("JSON String Parsing Error: Invalid number format");
                 }
-                while (_pos < _str.size() && util::isdigit(_str[_pos])) {
+                while (pos_ < str_.size() && util::isdigit(str_[pos_])) {
                     next();
                 }
             }
 
             // 指数部分
-            if (_pos < _str.size() && (peek() == u8'e' || peek() == u8'E')) {
+            if (pos_ < str_.size() && (peek() == u8'e' || peek() == u8'E')) {
                 next();
-                if (_pos < _str.size() && (peek() == u8'+' || peek() == u8'-')) {
+                if (pos_ < str_.size() && (peek() == u8'+' || peek() == u8'-')) {
                     next();
                 }
-                if (_pos >= _str.size() || !util::isdigit(peek())) {
+                if (pos_ >= str_.size() || !util::isdigit(peek())) {
                     throw std::runtime_error("JSON String Parsing Error: Invalid number format");
                 }
-                while (_pos < _str.size() && util::isdigit(_str[_pos])) {
+                while (pos_ < str_.size() && util::isdigit(str_[pos_])) {
                     next();
                 }
             }
 
             // 转换为 std::string 以便使用 stod
             std::string num_str;
-            num_str.reserve(_pos - start);
-            for (size_t i = start; i < _pos; ++i) {
-                num_str.push_back(static_cast<char>(_str[i]));
+            num_str.reserve(pos_ - start);
+            for (size_t i = start; i < pos_; ++i) {
+                num_str.push_back(static_cast<char>(str_[i]));
             }
             return JsonValue{std::stod(num_str)};
         }
@@ -1457,7 +1510,7 @@ namespace json {
             next(); // 跳过开头的引号
             std::u8string raw_result;
 
-            while (_pos < _str.size()) {
+            while (pos_ < str_.size()) {
                 char8_t c = next();
                 if (c == u8'"') {
                     // 遇到结束引号
@@ -1465,36 +1518,44 @@ namespace json {
                 }
                 if (c == u8'\\') {
                     // 转义序列
-                    if (_pos >= _str.size()) {
+                    if (pos_ >= str_.size()) {
                         throw std::runtime_error("JSON String Parsing Error: Invalid string escape");
                     }
                     c = next();
                     switch (c) {
-                        case u8'"': raw_result += u8'"';
+                        case u8'"':
+                            raw_result += u8'"';
                             break;
-                        case u8'\\': raw_result += u8'\\';
+                        case u8'\\':
+                            raw_result += u8'\\';
                             break;
-                        case u8'/': raw_result += u8'/';
+                        case u8'/':
+                            raw_result += u8'/';
                             break;
-                        case u8'b': raw_result += u8'\b';
+                        case u8'b':
+                            raw_result += u8'\b';
                             break;
-                        case u8'f': raw_result += u8'\f';
+                        case u8'f':
+                            raw_result += u8'\f';
                             break;
-                        case u8'n': raw_result += u8'\n';
+                        case u8'n':
+                            raw_result += u8'\n';
                             break;
-                        case u8'r': raw_result += u8'\r';
+                        case u8'r':
+                            raw_result += u8'\r';
                             break;
-                        case u8't': raw_result += u8'\t';
+                        case u8't':
+                            raw_result += u8'\t';
                             break;
                         case u8'u': {
                             // Unicode 转义：\uXXXX
-                            if (_pos + 4 > _str.size()) {
+                            if (pos_ + 4 > str_.size()) {
                                 throw std::runtime_error("JSON String Parsing Error: Invalid unicode escape");
                             }
 
                             // 验证4个字符都是合法的十六进制数字
                             for (size_t i = 0; i < 4; ++i) {
-                                if (!util::isxdigit(_str[_pos + i])) {
+                                if (!util::isxdigit(str_[pos_ + i])) {
                                     throw std::runtime_error("JSON String Parsing Error: Invalid unicode escape");
                                 }
                             }
@@ -1503,33 +1564,33 @@ namespace json {
                             std::string hex_str;
                             hex_str.reserve(4);
                             for (size_t i = 0; i < 4; ++i) {
-                                hex_str.push_back(static_cast<char>(_str[_pos + i]));
+                                hex_str.push_back(static_cast<char>(str_[pos_ + i]));
                             }
 
                             uint32_t code = std::stoul(hex_str, nullptr, 16);
-                            _pos += 4;
+                            pos_          += 4;
 
                             if (code >= 0xD800 && code <= 0xDBFF) {
-                                if (_pos + 6 > _str.size() || _str[_pos] != u8'\\' || _str[_pos + 1] != u8'u') {
+                                if (pos_ + 6 > str_.size() || str_[pos_] != u8'\\' || str_[pos_ + 1] != u8'u') {
                                     throw std::runtime_error("JSON String Parsing Error: Invalid surrogate pair");
                                 }
 
-                                _pos += 2;
+                                pos_ += 2;
 
                                 // 验证低代理项的4个十六进制字符
                                 for (size_t i = 0; i < 4; ++i) {
-                                    if (!util::isxdigit(_str[_pos + i])) {
+                                    if (!util::isxdigit(str_[pos_ + i])) {
                                         throw std::runtime_error("JSON String Parsing Error: Invalid unicode escape");
                                     }
                                 }
 
                                 hex_str.clear();
                                 for (size_t i = 0; i < 4; ++i) {
-                                    hex_str.push_back(static_cast<char>(_str[_pos + i]));
+                                    hex_str.push_back(static_cast<char>(str_[pos_ + i]));
                                 }
 
                                 const uint32_t low = std::stoul(hex_str, nullptr, 16);
-                                _pos += 4;
+                                pos_               += 4;
 
                                 if (low < 0xDC00 || low > 0xDFFF) {
                                     throw std::runtime_error("JSON String Parsing Error: Invalid low surrogate");
@@ -1547,13 +1608,13 @@ namespace json {
                         }
                         default:
                             throw std::runtime_error(
-                                std::string("JSON String Parsing Error: Invalid escape character: \\") +
-                                static_cast<char>(c));
+                                    std::string("JSON String Parsing Error: Invalid escape character: \\") +
+                                    static_cast<char>(c));
                     }
                 } else {
                     // 普通字符：验证 UTF-8 序列
-                    size_t remaining = _str.size() - _pos + 1; // +1 因为已经 next() 了
-                    size_t seq_len = util::validate_utf8_sequence(&_str[_pos - 1], remaining);
+                    size_t remaining = str_.size() - pos_ + 1; // +1 因为已经 next() 了
+                    size_t seq_len   = util::validate_utf8_sequence(&str_[pos_ - 1], remaining);
                     if (seq_len == 0) {
                         throw std::runtime_error("JSON String Parsing Error: Invalid UTF-8 sequence");
                     }
@@ -1576,14 +1637,14 @@ namespace json {
          */
         JsonValue parse_array() {
             next(); // 跳过 '['
-            ++_depth;
+            ++depth_;
             JsonArray arr;
 
             skip_whitespace();
             if (peek() == u8']') {
                 // 空数组
                 next();
-                --_depth;
+                --depth_;
                 return JsonValue{arr};
             }
 
@@ -1594,7 +1655,7 @@ namespace json {
                 if (peek() == u8']') {
                     // 数组结束
                     next();
-                    --_depth;
+                    --depth_;
                     return JsonValue{arr};
                 }
 
@@ -1607,13 +1668,13 @@ namespace json {
 
         JsonValue parse_object() {
             next(); // 跳过 '{'
-            ++_depth;
+            ++depth_;
             JsonObject obj;
 
             skip_whitespace();
             if (peek() == u8'}') {
                 next();
-                --_depth;
+                --depth_;
                 return JsonValue{obj};
             }
 
@@ -1623,8 +1684,8 @@ namespace json {
                 if (peek() != u8'"') {
                     throw std::runtime_error("JSON String Parsing Error: Expected string key in object");
                 }
-                JsonValue key_val = parse_string();
-                std::u8string key = key_val.as<JsonString>();
+                JsonValue     key_val = parse_string();
+                std::u8string key     = key_val.as<JsonString>();
 
                 skip_whitespace();
                 if (peek() != u8':') {
@@ -1637,7 +1698,7 @@ namespace json {
                 skip_whitespace();
                 if (peek() == u8'}') {
                     next();
-                    --_depth;
+                    --depth_;
                     return JsonValue{obj};
                 }
 
@@ -1658,7 +1719,7 @@ namespace json {
      * @return 解析后的 JsonValue
      * @throw std::runtime_error 解析错误时
      */
-    inline JsonValue parse(const std::u8string &json_str, size_t max_depth = JsonParser::default_max_depth) {
+    inline JsonValue parse(const std::u8string &json_str, size_t max_depth = JsonParser::kDefaultMaxDepth) {
         return JsonParser::parse(json_str, max_depth);
     }
 
@@ -1669,10 +1730,9 @@ namespace json {
      * @return 解析后的 JsonValue
      * @throw std::runtime_error 解析错误时
      */
-    inline JsonValue parse(const std::string &json_str, size_t max_depth = JsonParser::default_max_depth) {
+    inline JsonValue parse(const std::string &json_str, size_t max_depth = JsonParser::kDefaultMaxDepth) {
         return JsonParser::parse(json_str, max_depth);
     }
+} // namespace json
 
-}
-
-#endif //TINY_JSON_JSON_H
+#endif // TINY_JSON_JSON_H

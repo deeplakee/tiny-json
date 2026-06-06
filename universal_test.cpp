@@ -67,7 +67,7 @@ TEST(create_string) {
 
 TEST(create_array) {
     JsonArray arr = {1, "test", true};
-    JsonValue j = arr;
+    JsonValue j   = arr;
     ASSERT_EQ(j.type(), JsonValueType::Array);
     ASSERT_EQ(j.size(), 3);
 
@@ -83,8 +83,8 @@ TEST(create_object) {
     ASSERT_EQ(j.size(), 1);
 
     JsonValue j2(object({
-        {"name", "Alice"},
-        {"age", 30}
+            {"name", "Alice"},
+            {"age", 30}
     }));
     ASSERT_EQ(j2.size(), 2);
 }
@@ -126,7 +126,7 @@ TEST(serialize_string) {
 }
 
 TEST(serialize_array) {
-    JsonValue j = array({1, "test", true});
+    JsonValue   j      = array({1, "test", true});
     std::string result = j.serialize();
     ASSERT_TRUE(result.find("[1,\"test\",true]") != std::string::npos);
 
@@ -136,8 +136,8 @@ TEST(serialize_array) {
 
 TEST(serialize_object) {
     JsonValue j = object({
-        {"name", "Alice"},
-        {"age", 30}
+            {"name", "Alice"},
+            {"age", 30}
     });
     std::string result = j.serialize();
     ASSERT_TRUE(result.find("\"name\":\"Alice\"") != std::string::npos);
@@ -146,14 +146,14 @@ TEST(serialize_object) {
 
 TEST(serialize_with_indent) {
     JsonValue j = object({
-        {"name", "Alice"},
-        {
-            "address", object({
-                {"city", "Beijing"},
-                {"street", "Main St"}
-            })
-        },
-        {"scores", array({95, 88, 92})}
+            {"name", "Alice"},
+            {
+                    "address", object({
+                            {"city", "Beijing"},
+                            {"street", "Main St"}
+                    })
+            },
+            {"scores", array({95, 88, 92})}
     });
 
     std::string result = j.serialize(2);
@@ -312,7 +312,7 @@ TEST(object_access) {
 
 TEST(object_modification) {
     JsonValue j = object({
-        {"name", "Alice"}
+            {"name", "Alice"}
     });
 
     j["age"] = 30;
@@ -392,7 +392,7 @@ TEST(large_numbers) {
 }
 
 TEST(special_characters_in_string) {
-    JsonValue j = parse("\"\\t\\n\\r\\b\\f\"");
+    JsonValue   j      = parse("\"\\t\\n\\r\\b\\f\"");
     std::string result = j.as_string();
     ASSERT_EQ(result[0], '\t');
     ASSERT_EQ(result[1], '\n');
@@ -403,7 +403,7 @@ TEST(special_characters_in_string) {
 
 TEST(deep_nesting) {
     std::string json = "{\"a\":{\"b\":{\"c\":{\"d\":{\"e\":1}}}}}";
-    JsonValue j = parse(json);
+    JsonValue   j    = parse(json);
     ASSERT_EQ(j.at("a").at("b").at("c").at("d").at("e").as<JsonNumber>(), 1.0);
 }
 
@@ -432,8 +432,8 @@ TEST(helper_array_function) {
 
 TEST(helper_object_function) {
     JsonValue j = object({
-        {"name", "Alice"},
-        {"age", 30}
+            {"name", "Alice"},
+            {"age", 30}
     });
     ASSERT_EQ(j.type(), JsonValueType::Object);
     ASSERT_EQ(j.at("name").as_string(), "Alice");
@@ -445,7 +445,7 @@ TEST(helper_object_function) {
 // ============================================
 
 TEST(foreach_array) {
-    JsonValue j = array({1, 2, 3});
+    JsonValue           j = array({1, 2, 3});
     std::vector<double> values;
 
     j.for_each_array([&](const JsonValue &elem) {
@@ -460,8 +460,8 @@ TEST(foreach_array) {
 
 TEST(foreach_object) {
     JsonValue j = object({
-        {"name", "Alice"},
-        {"age", 30}
+            {"name", "Alice"},
+            {"age", 30}
     });
 
     int count = 0;
@@ -491,7 +491,7 @@ TEST(foreach_with_two_version) {
     ASSERT_DOUBLE_EQ(j.at(2).as<JsonNumber>(), 30.0);
 
     // 通过const引用强制调用const版本
-    const JsonValue &const_j = j;
+    const JsonValue &   const_j = j;
     std::vector<double> values;
 
     const_j.for_each_array([&](const JsonValue &elem) {
@@ -528,18 +528,18 @@ TEST(array_size_limit_exceeded) {
 // ============================================
 
 TEST(iterator_array_range_for) {
-    JsonValue j = array({1, 2, 3, 4, 5});
-    double sum = 0;
-    for (auto &elem : j.as_array()) {
+    JsonValue j   = array({1, 2, 3, 4, 5});
+    double    sum = 0;
+    for (auto &elem: j.as_array()) {
         sum += elem.as<JsonNumber>();
     }
     ASSERT_DOUBLE_EQ(sum, 15.0);
 }
 
 TEST(iterator_array_const) {
-    const JsonValue j = array({10, 20, 30});
+    const JsonValue     j = array({10, 20, 30});
     std::vector<double> values;
-    for (const auto &elem : j.as_array()) {
+    for (const auto &elem: j.as_array()) {
         values.push_back(elem.as<JsonNumber>());
     }
     ASSERT_EQ(values.size(), 3);
@@ -550,7 +550,7 @@ TEST(iterator_array_const) {
 
 TEST(iterator_array_modify) {
     JsonValue j = array({1, 2, 3});
-    for (auto &elem : j.as_array()) {
+    for (auto &elem: j.as_array()) {
         elem = JsonValue(elem.as<JsonNumber>() * 10);
     }
     ASSERT_DOUBLE_EQ(j.at(0).as<JsonNumber>(), 10.0);
@@ -559,19 +559,19 @@ TEST(iterator_array_modify) {
 }
 
 TEST(iterator_object_range_for) {
-    JsonValue j = object({{"a", 1}, {"b", 2}, {"c", 3}});
-    double sum = 0;
-    for (auto &[key, value] : j.as_object()) {
+    JsonValue j   = object({{"a", 1}, {"b", 2}, {"c", 3}});
+    double    sum = 0;
+    for (auto &[key, value]: j.as_object()) {
         sum += value.as<JsonNumber>();
     }
     ASSERT_DOUBLE_EQ(sum, 6.0);
 }
 
 TEST(iterator_object_const) {
-    const JsonValue j = object({{"x", 10}, {"y", 20}});
-    int count = 0;
-    for (const auto &[key, value] : j.as_object()) {
-        (void)key;
+    const JsonValue j     = object({{"x", 10}, {"y", 20}});
+    int             count = 0;
+    for (const auto &[key, value]: j.as_object()) {
+        (void) key;
         count++;
     }
     ASSERT_EQ(count, 2);
@@ -579,7 +579,7 @@ TEST(iterator_object_const) {
 
 TEST(iterator_object_modify_values) {
     JsonValue j = object({{"a", 1}, {"b", 2}});
-    for (auto &[key, value] : j.as_object()) {
+    for (auto &[key, value]: j.as_object()) {
         value = JsonValue(value.as<JsonNumber>() * 100);
     }
     ASSERT_DOUBLE_EQ(j.at("a").as<JsonNumber>(), 100.0);
@@ -612,22 +612,22 @@ TEST(iterator_string_array_throws) {
 }
 
 TEST(iterator_stl_algorithm) {
-    JsonValue j = array({3, 1, 4, 1, 5, 9, 2, 6});
-    auto &arr = j.as_array();
-    auto it = std::min_element(arr.begin(), arr.end(),
-        [](const JsonValue &a, const JsonValue &b) {
-            return a.as<JsonNumber>() < b.as<JsonNumber>();
-        });
+    JsonValue j   = array({3, 1, 4, 1, 5, 9, 2, 6});
+    auto &    arr = j.as_array();
+    auto      it  = std::min_element(arr.begin(), arr.end(),
+                               [](const JsonValue &a, const JsonValue &b) {
+                                   return a.as<JsonNumber>() < b.as<JsonNumber>();
+                               });
     ASSERT_DOUBLE_EQ(it->as<JsonNumber>(), 1.0);
 }
 
 TEST(iterator_stl_count_if) {
-    JsonValue j = array({1, 2, 3, 4, 5, 6});
-    auto &arr = j.as_array();
-    auto even_count = std::count_if(arr.begin(), arr.end(),
-        [](const JsonValue &v) {
-            return static_cast<int>(v.as<JsonNumber>()) % 2 == 0;
-        });
+    JsonValue j          = array({1, 2, 3, 4, 5, 6});
+    auto &    arr        = j.as_array();
+    auto      even_count = std::count_if(arr.begin(), arr.end(),
+                                    [](const JsonValue &v) {
+                                        return static_cast<int>(v.as<JsonNumber>()) % 2 == 0;
+                                    });
     ASSERT_EQ(even_count, 3);
 }
 
@@ -673,11 +673,15 @@ TEST(json_pointer_root) {
 
 TEST(json_pointer_simple_path) {
     JsonValue j = object({
-        {"a", object({
-            {"b", object({
-                {"c", 42}
-            })}
-        })}
+            {
+                    "a", object({
+                            {
+                                    "b", object({
+                                            {"c", 42}
+                                    })
+                            }
+                    })
+            }
     });
     ASSERT_DOUBLE_EQ(j.resolve("/a/b/c").as<JsonNumber>(), 42.0);
 }
@@ -689,17 +693,19 @@ TEST(json_pointer_array_index) {
 
 TEST(json_pointer_nested_array) {
     JsonValue j = object({
-        {"data", array({1, 2, array({10, 20, 30})})}
+            {"data", array({1, 2, array({10, 20, 30})})}
     });
     ASSERT_DOUBLE_EQ(j.resolve("/data/2/1").as<JsonNumber>(), 20.0);
 }
 
 TEST(json_pointer_string_value) {
     JsonValue j = object({
-        {"user", object({
-            {"name", "Alice"},
-            {"age", 30}
-        })}
+            {
+                    "user", object({
+                            {"name", "Alice"},
+                            {"age", 30}
+                    })
+            }
     });
     ASSERT_EQ(j.resolve("/user/name").as_string(), "Alice");
 }
@@ -707,7 +713,7 @@ TEST(json_pointer_string_value) {
 TEST(json_pointer_escaped_tilde) {
     // ~0 代表 ~
     JsonValue j = object({
-        {"a~b", "tilde_value"}
+            {"a~b", "tilde_value"}
     });
     ASSERT_EQ(j.resolve("/a~0b").as_string(), "tilde_value");
 }
@@ -715,7 +721,7 @@ TEST(json_pointer_escaped_tilde) {
 TEST(json_pointer_escaped_slash) {
     // ~1 代表 /
     JsonValue j = object({
-        {"a/b", "slash_value"}
+            {"a/b", "slash_value"}
     });
     ASSERT_EQ(j.resolve("/a~1b").as_string(), "slash_value");
 }
@@ -723,16 +729,18 @@ TEST(json_pointer_escaped_slash) {
 TEST(json_pointer_escaped_both) {
     // 同时包含 ~0 和 ~1
     JsonValue j = object({
-        {"a/~b", "both_value"}
+            {"a/~b", "both_value"}
     });
     ASSERT_EQ(j.resolve("/a~1~0b").as_string(), "both_value");
 }
 
 TEST(json_pointer_modify_value) {
     JsonValue j = object({
-        {"a", object({
-            {"b", 1}
-        })}
+            {
+                    "a", object({
+                            {"b", 1}
+                    })
+            }
     });
     j.resolve("/a/b") = JsonValue(99);
     ASSERT_DOUBLE_EQ(j.resolve("/a/b").as<JsonNumber>(), 99.0);
@@ -740,7 +748,7 @@ TEST(json_pointer_modify_value) {
 
 TEST(json_pointer_const_access) {
     const JsonValue j = object({
-        {"x", array({1, 2, 3})}
+            {"x", array({1, 2, 3})}
     });
     ASSERT_DOUBLE_EQ(j.resolve("/x/2").as<JsonNumber>(), 3.0);
 }
@@ -776,7 +784,7 @@ TEST(json_pointer_invalid_format) {
 
 TEST(merge_add_new_keys) {
     JsonValue target = object({{"a", 1}});
-    JsonValue patch = object({{"b", 2}});
+    JsonValue patch  = object({{"b", 2}});
     target.merge(patch);
     ASSERT_DOUBLE_EQ(target.at("a").as<JsonNumber>(), 1.0);
     ASSERT_DOUBLE_EQ(target.at("b").as<JsonNumber>(), 2.0);
@@ -784,7 +792,7 @@ TEST(merge_add_new_keys) {
 
 TEST(merge_update_existing_key) {
     JsonValue target = object({{"a", 1}, {"b", 2}});
-    JsonValue patch = object({{"b", 99}});
+    JsonValue patch  = object({{"b", 99}});
     target.merge(patch);
     ASSERT_DOUBLE_EQ(target.at("a").as<JsonNumber>(), 1.0);
     ASSERT_DOUBLE_EQ(target.at("b").as<JsonNumber>(), 99.0);
@@ -792,7 +800,7 @@ TEST(merge_update_existing_key) {
 
 TEST(merge_remove_key_with_null) {
     JsonValue target = object({{"a", 1}, {"b", 2}, {"c", 3}});
-    JsonValue patch = object({{"b", nullptr}});
+    JsonValue patch  = object({{"b", nullptr}});
     target.merge(patch);
     ASSERT_TRUE(target.contains("a"));
     ASSERT_FALSE(target.contains("b"));
@@ -801,10 +809,10 @@ TEST(merge_remove_key_with_null) {
 
 TEST(merge_nested_object) {
     JsonValue target = object({
-        {"a", object({{"x", 1}, {"y", 2}})}
+            {"a", object({{"x", 1}, {"y", 2}})}
     });
     JsonValue patch = object({
-        {"a", object({{"y", 99}, {"z", 3}})}
+            {"a", object({{"y", 99}, {"z", 3}})}
     });
     target.merge(patch);
     ASSERT_DOUBLE_EQ(target.at("a").at("x").as<JsonNumber>(), 1.0);
@@ -814,7 +822,7 @@ TEST(merge_nested_object) {
 
 TEST(merge_replace_non_object) {
     JsonValue target = object({{"a", 1}});
-    JsonValue patch = JsonValue(42);
+    JsonValue patch  = JsonValue(42);
     target.merge(patch);
     ASSERT_TRUE(target.is<JsonNumber>());
     ASSERT_DOUBLE_EQ(target.as<JsonNumber>(), 42.0);
@@ -822,7 +830,7 @@ TEST(merge_replace_non_object) {
 
 TEST(merge_patch_not_object) {
     JsonValue target = object({{"a", 1}});
-    JsonValue patch = "hello";
+    JsonValue patch  = "hello";
     target.merge(patch);
     ASSERT_TRUE(target.is<JsonString>());
     ASSERT_EQ(target.as_string(), "hello");
@@ -830,7 +838,7 @@ TEST(merge_patch_not_object) {
 
 TEST(merge_target_not_object) {
     JsonValue target = 42;
-    JsonValue patch = object({{"a", 1}});
+    JsonValue patch  = object({{"a", 1}});
     target.merge(patch);
     ASSERT_TRUE(target.is<JsonObject>());
     ASSERT_DOUBLE_EQ(target.at("a").as<JsonNumber>(), 1.0);
@@ -838,7 +846,7 @@ TEST(merge_target_not_object) {
 
 TEST(merge_array_values) {
     JsonValue target = object({{"arr", array({1, 2, 3})}});
-    JsonValue patch = object({{"arr", array({10, 20})}});
+    JsonValue patch  = object({{"arr", array({10, 20})}});
     target.merge(patch);
     ASSERT_EQ(target.at("arr").size(), 2);
     ASSERT_DOUBLE_EQ(target.at("arr").at(0).as<JsonNumber>(), 10.0);
@@ -846,18 +854,26 @@ TEST(merge_array_values) {
 
 TEST(merge_deep_nested) {
     JsonValue target = object({
-        {"a", object({
-            {"b", object({
-                {"c", 1}, {"d", 2}
-            })}
-        })}
+            {
+                    "a", object({
+                            {
+                                    "b", object({
+                                            {"c", 1}, {"d", 2}
+                                    })
+                            }
+                    })
+            }
     });
     JsonValue patch = object({
-        {"a", object({
-            {"b", object({
-                {"d", nullptr}
-            })}
-        })}
+            {
+                    "a", object({
+                            {
+                                    "b", object({
+                                            {"d", nullptr}
+                                    })
+                            }
+                    })
+            }
     });
     target.merge(patch);
     ASSERT_DOUBLE_EQ(target.at("a").at("b").at("c").as<JsonNumber>(), 1.0);
@@ -866,7 +882,7 @@ TEST(merge_deep_nested) {
 
 TEST(merge_empty_patch) {
     JsonValue target = object({{"a", 1}, {"b", 2}});
-    JsonValue patch = object({});
+    JsonValue patch  = object({});
     target.merge(patch);
     ASSERT_EQ(target.size(), 2);
     ASSERT_DOUBLE_EQ(target.at("a").as<JsonNumber>(), 1.0);
@@ -879,7 +895,7 @@ TEST(merge_empty_patch) {
 TEST(parse_max_depth_default) {
     // 默认深度 256，正常嵌套应该成功
     std::string json = R"({"a":{"b":{"c":1}}})";
-    JsonValue j = parse(json);
+    JsonValue   j    = parse(json);
     ASSERT_DOUBLE_EQ(j.resolve("/a/b/c").as<JsonNumber>(), 1.0);
 }
 
@@ -892,7 +908,7 @@ TEST(parse_max_depth_custom) {
 TEST(parse_max_depth_exactly_at_limit) {
     // 刚好在深度限制内应该成功
     std::string json = R"({"a":{"b":{"c":1}}})";
-    JsonValue j = parse(json, 3);
+    JsonValue   j    = parse(json, 3);
     ASSERT_DOUBLE_EQ(j.resolve("/a/b/c").as<JsonNumber>(), 1.0);
 }
 
@@ -953,10 +969,10 @@ TEST(serialize_number_scientific) {
 
 TEST(serialize_number_roundtrip) {
     // 数字往返一致性
-    std::string json = R"({"a":3.14,"b":1e20,"c":0.001})";
-    JsonValue j = parse(json);
+    std::string json       = R"({"a":3.14,"b":1e20,"c":0.001})";
+    JsonValue   j          = parse(json);
     std::string serialized = j.serialize();
-    JsonValue j2 = parse(serialized);
+    JsonValue   j2         = parse(serialized);
 
     ASSERT_DOUBLE_EQ(j2.at("a").as<JsonNumber>(), 3.14);
     ASSERT_DOUBLE_EQ(j2.at("b").as<JsonNumber>(), 1e20);
@@ -968,12 +984,12 @@ TEST(serialize_number_roundtrip) {
 // ============================================
 
 TEST(type_name_returns_correct_strings) {
-    ASSERT_EQ(JsonValue().typeName(), "null");
-    ASSERT_EQ(JsonValue(true).typeName(), "bool");
-    ASSERT_EQ(JsonValue(3.14).typeName(), "number");
-    ASSERT_EQ(JsonValue("hello").typeName(), "string");
-    ASSERT_EQ(array({}).typeName(), "array");
-    ASSERT_EQ(object({}).typeName(), "object");
+    ASSERT_EQ(JsonValue().type_name(), "null");
+    ASSERT_EQ(JsonValue(true).type_name(), "bool");
+    ASSERT_EQ(JsonValue(3.14).type_name(), "number");
+    ASSERT_EQ(JsonValue("hello").type_name(), "string");
+    ASSERT_EQ(array({}).type_name(), "array");
+    ASSERT_EQ(object({}).type_name(), "object");
 }
 
 // ============================================
@@ -996,9 +1012,9 @@ TEST(move_array) {
 }
 
 TEST(move_object) {
-    JsonValue j1 = object({{"key", "value"}});
+    JsonValue  j1        = object({{"key", "value"}});
     JsonObject moved_obj = std::move(j1.as<JsonObject>());
-    JsonValue j2(moved_obj);
+    JsonValue  j2(moved_obj);
     ASSERT_EQ(j2.size(), 1);
     ASSERT_EQ(j2.at("key").as_string(), "value");
 }
@@ -1067,7 +1083,7 @@ TEST(parse_error_number_with_trailing_chars) {
 TEST(parse_valid_utf8) {
     // 合法的 UTF-8 应该能正常解析
     std::string json = R"("Hello 你好 こんにちは 🌍")";
-    JsonValue j = parse(json);
+    JsonValue   j    = parse(json);
     ASSERT_TRUE(j.is<JsonString>());
 }
 
@@ -1130,10 +1146,10 @@ TEST(number_int_constructor) {
 // ============================================
 
 TEST(round_trip_simple) {
-    std::string original = R"({"name":"Alice","age":30,"active":true,"score":95.5})";
-    JsonValue parsed = parse(original);
+    std::string original   = R"({"name":"Alice","age":30,"active":true,"score":95.5})";
+    JsonValue   parsed     = parse(original);
     std::string serialized = parsed.serialize();
-    JsonValue reparsed = parse(serialized);
+    JsonValue   reparsed   = parse(serialized);
 
     ASSERT_EQ(reparsed.at("name").as_string(), "Alice");
     ASSERT_DOUBLE_EQ(reparsed.at("age").as<JsonNumber>(), 30.0);
@@ -1142,20 +1158,20 @@ TEST(round_trip_simple) {
 }
 
 TEST(round_trip_nested) {
-    std::string original = R"({"a":{"b":[1,2,3]},"c":"hello"})";
-    JsonValue parsed = parse(original);
+    std::string original   = R"({"a":{"b":[1,2,3]},"c":"hello"})";
+    JsonValue   parsed     = parse(original);
     std::string serialized = parsed.serialize();
-    JsonValue reparsed = parse(serialized);
+    JsonValue   reparsed   = parse(serialized);
 
     ASSERT_EQ(reparsed.at("a").at("b").at(1).as<JsonNumber>(), 2.0);
     ASSERT_EQ(reparsed.at("c").as_string(), "hello");
 }
 
 TEST(round_trip_with_escapes) {
-    std::string original = R"({"msg":"say \"hello\"\n\tworld"})";
-    JsonValue parsed = parse(original);
+    std::string original   = R"({"msg":"say \"hello\"\n\tworld"})";
+    JsonValue   parsed     = parse(original);
     std::string serialized = parsed.serialize();
-    JsonValue reparsed = parse(serialized);
+    JsonValue   reparsed   = parse(serialized);
 
     ASSERT_EQ(reparsed.at("msg").as_string(), "say \"hello\"\n\tworld");
 }
@@ -1166,9 +1182,9 @@ TEST(round_trip_with_escapes) {
 
 TEST(serialize_pretty_nested) {
     JsonValue j = object({
-        {"name", "Alice"},
-        {"scores", array({95, 88, 92})},
-        {"active", true}
+            {"name", "Alice"},
+            {"scores", array({95, 88, 92})},
+            {"active", true}
     });
 
     std::string pretty = j.serialize(4);
